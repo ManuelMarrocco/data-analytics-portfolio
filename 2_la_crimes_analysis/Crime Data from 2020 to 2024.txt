@@ -1,0 +1,466 @@
+Date: March 16, 2026
+Dataset: Crime_Data_from_2020_to_2024
+Analysis Step: Stakeholder Meeting
+
+Analysis Requests
+Which types of crimes are most frequent
+How crime patterns evolve over time
+Which areas or districts experience higher crime levels
+Whether victim demographics or weapon usage show meaningful patterns
+
+Objectives
+Prioritize policing resources
+Identify emerging crime trends
+Support prevention strategies
+Produce clear insights about crime trends and geographic patterns.
+
+Stakeholders
+City Public Safety Department
+Public Safety Strategy Team (team that requested the analysis)
+Police Operations Command
+City Data & Analytics Office
+City Leadership
+City Manager
+Public Safety Director
+Budget & Planning Office
+
+Questions to Stakeholders
+Which roles are directly involved in this analysis?
+What is the data source?
+When analyzing patterns in victim demographics or weapon usage, do you use a specific methodology to evaluate them?
+If the dataset has missing values or errors, how should I manage them?
+One last question: do you want me to analyze the entire period of the dataset or a specific period?
+How would you like the results to be presented? For example, should the most frequent crimes be shown as a top 5, top 10, or a complete list?
+For the areas with the highest crime levels, would you like a ranking of crime types? If so, is there a specific range you would prefer?
+
+Metrics to Use
+Absolute values
+Percentages or rates
+Full time coverage of the dataset
+Transparency in how data issues are handled
+No strict requirement for:
+Ranking of the most frequent crime types
+
+Key analytical focus:
+Whether crime is increasing, decreasing, or stable
+Which crime categories show the largest changes
+
+No predefined limit for:
+Ranking areas or districts based on crime levels
+Identifying which crime types are most common within high-crime areas
+
+--------------------------------------------------------
+
+Preparing the Scope of Work (see L.A._Crimes_analysis_from_2020_to_2024_v4)
+
+Reviewed and corrected the Scope of Work to ensure alignment between project activities, deliverables, and milestone definitions.
+
+--------------------------------------------------------
+
+Date: March 17, 2026
+Dataset: Crime_Data_from_2020_to_2024
+Analysis Step: Data Preparing
+
+Dataset Metadata
+
+Dataset name: Crime_Data_from_2020_to_2024.csv
+Source: Police Records Management System (RMS)
+Time coverage: 2020–2024
+Dataset size: ~240 MB
+Number of observations: 1,004,894
+Number of variables: 28
+
+--------------------------------------------------------
+
+Exploratory Data Analysis (EDA) — Crime_Data_from_2020_to_2024
+
+Create a copy of the dataset: crime_data_from_2020_to_2024_v2
+Check dataset size: 240 MB (python/sql)
+Check dataset size (rows and columns): 1004894 rows, 28 columns
+
+Identify the variables (columns and their meaning) DONE
+
+Verify the data types of each variable. Date columns were converted to datetime type, creating two new columns. The TIME OCC column was normalized to four-digit format and converted to timedelta in a new column. Date and time were then combined to create a single timestamp column.
+
+Check time coverage of the dataset. Done
+
+Identify main entities and categories:
+dr_no, 
+date rptd,
+area,
+areaname,
+rpt dist no,
+part 1-2,
+crm code,
+crm code desc,
+vict age,
+vict sex,
+premis cd,
+premis desc,
+weapon used code,
+weapon desc,
+status desc,
+crm cd 1,
+location,
+lat,
+lon.
+
+Variables selected for the analysis dataset:
+dr_no,
+date rptd,
+timestamp occ,
+area,
+areaname,
+rpt dist no,
+part 1-2,
+crm code,
+crm code desc,
+vict age,
+vict sex,
+weapon used cd,
+weapon desc,
+status desc,
+lat,
+lon.
+
+Data Quality Validation Checklist — Crime Dataset
+1. Duplicate Records Check
+
+☐ Verify that each crime incident ID is unique
+☐ Search for duplicated rows in the dataset
+☐ Check repeated combinations of:
+
+Date Occurred
+Area / Location
+Crime Code
+
+Goal:
+Ensure crime incidents are not counted multiple times.
+
+No primary key duplicates were identified.
+
+2. Missing Values Check
+
+☐ Check for missing values in Date Occurred
+☐ Check for missing values in Crime Code / Crime Description
+☐ Check for missing values in Area / District
+☐ Check for missing values in Victim Age
+☐ Check for missing values in Victim Sex
+☐ Check for missing values in Weapon Used
+
+Goal:
+Assess dataset completeness before analysis.
+
+Missing values were identified in Weapon Used Cd and Weapon Desc (67.44%), which may indicate incidents in which no weapon was involved.nvolved. Missing values in Vict Sex represent 14.39% of the dataset and may correspond to cases where victim information was unavailable or not recorded.
+
+Some records in the dataset contained missing geographic coordinates (LAT = 0, LON = 0).
+To address this issue, records with zero coordinates were matched with other records sharing
+the same LOCATION that contained valid latitude and longitude. The most frequent coordinate
+pair for each location was then used to replace the missing values.
+After the replacement, a validation check was performed to identify any remaining records
+with zero coordinates, which may require exclusion from geographic visualizations.
+
+3. Invalid Values Check
+
+☐ Verify Victim Age is within a realistic range (e.g., 0–100+)
+☐ Check that Date Reported is not earlier than Date Occurred
+☐ Verify that numeric columns contain numeric values only
+☐ Detect impossible or illogical values
+
+Goal:
+Identify data entry errors.
+
+An extreme value of Vict Age equal to 120 was identified in a single record associated with the crime category "Assault with Deadly Weapon".
+Given its rarity and the presence of other data entry anomalies (negative ages),
+this value was treated as a potential outlier.
+Vict Age values equal to 0 are likely to represent missing or unknown information rather than valid age values, and should be reviewed before final treatment in the analysis.
+The remaining anomalous age values (−1 to −4) will be presented during the stakeholder update meeting in order to determine how they should be handled in the analysis.
+
+4. Inconsistent Categories Check
+
+☐ Verify Victim Sex categories are consistent (e.g., M/F only)
+☐ Check Weapon Used categories for duplicates or synonyms
+☐ Verify Crime descriptions are consistently labeled
+☐ Check for spelling variations or inconsistent capitalization
+
+Goal:
+Ensure correct grouping during analysis.
+
+Vict Sex codes:
+M = Male, F = Female
+X = Unknown / not reported (often used in property crimes where no individual victim is recorded)
+H = Rare category with unclear meaning in the dataset; flagged for stakeholder review
+
+'-' appears only once while the same crime category contains tens of thousands of records with valid Vict Sex values (M, F, X). This strongly suggests '-' is a data entry anomaly rather than a valid category.
+
+5. Data Format Validation
+
+☐ Verify date columns follow a consistent format
+☐ Confirm numeric fields are stored as numbers
+☐ Confirm categorical variables are stored as text categories
+☐ Check that geographic identifiers (AREA / AREA NAME) are aligned
+
+Goal:
+Ensure the dataset structure is usable for analysis tools.
+
+Several data format checks were already verified during data preparation (datetime conversion, numeric types, and categorical fields). The final validation confirmed that AREA codes and AREA NAME values are correctly aligned.
+
+----------------------------------------------------
+
+Note for Stakeholder Update — Victim Age Anomalies
+
+During the data quality validation phase, several anomalous values were identified in the Vict Age variable.
+The following situations were observed:
+Some records contain negative age values (for example −1, −2, −3, −4), which are not logically valid and likely represent data entry errors.
+A significant number of records report Vict Age = 0, which may indicate unknown or unreported age, rather than a real value.
+A very small number of records show extreme age values (for example 120), which may represent outliers or potential data entry issues.
+At this stage, these values have not yet been modified or removed from the dataset.
+These anomalies will be presented to the stakeholder during the first project update meeting in order to confirm how they should be handled in the analysis (for example: treating them as missing values, excluding them from age-based analysis, or applying another rule).
+Additional Data Quality Note — Victim Sex Categories
+During the categorical validation of the Vict Sex variable, two uncommon values were identified.
+The category X appears in cases where the victim’s sex is unknown or not reported. This frequently occurs in property crimes where the victim may be a business, organization, or property rather than an identifiable individual.
+A very small number of records contain the value H, whose meaning is not clearly documented in the dataset and appears across different crime categories without a clear pattern.
+Additionally, one record contains the value "-", which appears to be a data entry anomaly.
+These observations will also be presented to stakeholders to confirm how these values should be treated in demographic analyses.
+
+---
+
+simulated mail to the stakeholder about anomalous values:
+
+Subject: Data Quality Clarification — Vict Age and Vict Sex Variables
+
+Good morning,
+During the data quality validation phase, several anomalous values were identified in the Vict Age variable. Some records contain the values 0, -1, -2, -3, and -4, which are not logically valid and may represent data entry errors. In addition, one record contains the value 120, which may represent a potential outlier or a data entry issue.
+At this stage, these values have not been modified or removed from the dataset.
+During the categorical validation of the Vict Sex variable, two uncommon values were identified: X and H. Additionally, one record contains the value “-”, which appears to be a data entry anomaly.
+To support the analysis, I would appreciate confirmation on how these cases should be handled. Possible approaches could include:
+Vict Age
+Treat values -1 to -4 and 0 as missing values
+Retain Age = 120 as a valid outlier
+Alternatively, exclude these records from age-based analysis
+Vict Sex
+Treat H and “-” as missing or unknown values
+Retain X as “Unknown / Not reported”
+Please let me know if one of these approaches is preferred, or if another rule should be applied before proceeding with the data cleaning phase.
+Thank you for your time and guidance.
+
+Kind regards,
+Manuel Marrocco
+Data Analyst
+
+---
+
+stakeholder answer:
+
+Subject: Re: Data Quality Clarification — Vict Age and Vict Sex Variables
+Good afternoon Manuel,
+Thank you for the clear explanation of the data quality issues identified during the validation phase. We appreciate the careful approach before applying any transformations to the dataset.
+Regarding your questions, please proceed with the following treatment rules for the analysis.
+Vict Age
+Values -1, -2, -3, -4 and 0 should be treated as missing values (unknown age).
+The value 120 may be retained in the dataset as a valid outlier, but please flag it in the documentation.
+Records with missing age values may be excluded from age-based demographic analysis, but they should remain in the dataset for all other analyses.
+Vict Sex
+The value X should be treated as Unknown / Not reported.
+The value H should also be treated as Unknown, as it does not correspond to a defined category in our reporting standards.
+The value “-” can be treated as a data entry error and recoded as Unknown.
+Please document these cleaning rules in the project notes so that the transformations remain transparent and reproducible.
+Let us know if any other anomalies appear during the cleaning process.
+
+Best regards,
+Public Safety Strategy Team
+City Public Safety Department
+
+---
+
+Data Cleaning Plan
+Variable		Issue			Treatment Rule
+Vict Age		Values −1, −2, −3, −4	Treat as missing (unknown age)
+Vict Age		Value = 0		Treat as missing (unknown age)
+Vict Age		Value = 120		Retain as valid outlier; flag in documentation
+Vict Sex		Value = X		Treat as Unknown / Not reported
+Vict Sex		Value = H		Recode as Unknown
+Vict Sex		Value = "-"		Treat as data entry error and recode as Unknown
+
+recode anomalous Vict Sex values (X, H, "-") into a single Unknown category (X)
+
+---
+
+Date: March 18, 2026
+Dataset: Crime_Data_from_2020_to_2024
+Analysis Step: Time-series exploration
+
+Ready to generate:
+
+Identify the most frequent crime types
+Aggregate crime incidents by crime category (Crm Cd Desc)
+Present results using absolute counts and percentages
+Create a summary table of crime frequencies
+Visualize the distribution using bar charts
+Provide a brief interpretation of the most frequent crime types
+
+Note:
+There is no strict requirement to limit the ranking (for example Top 5 or Top 10). The ranking can include as many categories as needed for clarity.
+
+updating:
+After computing the frequency distribution of crime categories, the analysis shows a highly concentrated distribution in which a limited number of crime types account for a large share of total incidents.
+Based on this distribution, crime categories representing at least 1 percent of total incidents were selected for the initial analysis. This threshold captures the most relevant categories while excluding the long tail of very low-frequency crimes.
+In the current dataset, this criterion corresponds to approximately the top 20 crime categories, which together represent the majority of reported incidents.
+
+Analyze how crime patterns evolve over time
+Aggregate incidents across the entire time coverage of the dataset (2020–2024)
+Analyze trends using absolute counts and percentages
+Create time-series summaries (yearly or monthly)
+Visualize trends using line charts
+
+---
+
+Observation
+A structural anomaly appears in the 2024 portion of the dataset.
+Monthly crime counts decline sharply in the final months of 2024.
+Hypothesis
+The most plausible explanation is incomplete data coverage rather than a real decrease in incidents.
+Impact
+This may affect the interpretation of the crime trend analysis.
+Action Taken
+A clarification request was sent to the stakeholder regarding dataset completeness for 2024.
+Pending Decision
+The interpretation of the temporal analysis will be adjusted after stakeholder confirmation.
+
+---
+
+ Email to stakeholder
+
+Subject: Data Coverage Observation — 2024 Crime Data
+
+Good afternoon,
+During the temporal analysis of crime incidents (2020–2024), an anomaly was observed in the 2024 portion of the dataset.
+Compared with the previous years, the number of reported incidents shows a sharp decline in the final months of 2024, which differs from the historical pattern observed between 2020 and 2023.
+At this stage, this pattern suggests that the 2024 data may represent a partial or incomplete extraction, rather than a real decrease in crime incidents.
+This potential limitation mainly affects the time trend analysis, and may also influence the overall distribution of crime categories, since the current results are calculated using the full set of available records.
+Before continuing with the interpretation of the results, I would appreciate confirmation on the following point:
+Does the dataset include complete records for the entire year 2024, or does it represent only a partial extraction of the year?
+Once confirmed, the trend analysis can be interpreted accordingly.
+
+Kind regards,
+Manuel Marrocco
+Data Analyst
+
+Key analytical focus:
+
+---
+
+Subject: Re: Clarification about 2024 data coverage
+
+Good afternoon Manuel,
+Thank you for flagging this point.
+The 2024 data in the dataset may indeed be incomplete for the most recent months, since reporting updates can occur with some delay in the records management system.
+Please keep the available 2024 data in the dataset and continue the analysis using the full time coverage that is available.
+If you notice that the incomplete reporting significantly affects the interpretation of the trends, please let us know and we can review that aspect together during the next update.
+Best regards,
+Public Safety Strategy Team
+City Public Safety Department
+
+---
+
+Subject: Re: Re: Clarification about 2024 data coverage
+
+Good afternoon,
+Thank you for the clarification.
+I will proceed with the analysis using the full time coverage currently available in the dataset, including the 2024 records.
+At the same time, the recent months of 2024 show a visible decline in incident counts that may be related to delayed reporting rather than a real change in crime levels.
+For this reason, where the 2024 portion of the timeline visibly affects the interpretation of the trend, the relevant charts will include a clear note indicating the potential impact of incomplete reporting.
+This will ensure that the results remain transparent while still allowing the analysis to cover the full available period.
+We can review this aspect together during the next project update if needed.
+Best regards,
+Manuel Marrocco
+Data Analyst
+
+---
+
+Determine whether crime levels are increasing, decreasing, or stable
+Identify crime categories showing the largest changes over time
+
+Identify areas with the highest crime levels
+Aggregate crime incidents by AREA / AREA NAME
+Create a ranking of areas based on crime counts
+Use absolute values and percentages to compare areas
+Visualize results using bar charts or geographic distribution charts
+
+Note:
+There is no predefined limit for the number of areas included in the ranking.
+
+Dataset: Crime_Data_from_2020_to_2024
+Analysis Step: Geographic Data Validation
+
+During the geographic validation phase of the dataset, an additional consistency check was performed on the LOCATION, LAT, and LON variables.
+The objective of this step was to verify whether each LOCATION value corresponded to a single geographic point or whether multiple coordinate pairs were associated with the same location.
+To perform this check, the dataset was grouped by LOCATION and the number of distinct latitude and longitude values associated with each LOCATION was calculated.
+The results showed that the majority of LOCATION values correspond to one or two coordinate pairs, indicating relatively stable spatial encoding in most cases. However, a limited number of locations are associated with a large number of coordinate pairs. These cases typically correspond to long streets or major urban corridors that span multiple geographic points across the city.
+Examples of locations with high spatial variability include major streets such as Figueroa Street, Vermont Avenue, Broadway, and Western Avenue, which appear with hundreds of different coordinate pairs in the dataset. This behavior is expected because the LOCATION field represents street names or street segments rather than precise addresses.
+To better understand the overall distribution of coordinate variability, descriptive statistics were computed for the number of distinct coordinates per LOCATION. The results show that the median number of coordinate pairs per location is 1, and 75 percent of locations are associated with two or fewer coordinate pairs. Only a small subset of locations shows a high number of distinct coordinates.
+These results indicate that the LOCATION field is generally stable and usable for spatial reference, while a limited number of major streets naturally present higher coordinate variability due to their geographic extent.
+
+Handling Missing Geographic Coordinates
+During the same validation step, it was observed that some records contained LAT = 0 and LON = 0, which represent missing or invalid geographic coordinates.
+To address this issue, the following recovery approach was implemented:
+Records with valid coordinates were grouped by LOCATION.
+For each LOCATION, the most frequent latitude–longitude pair observed in the dataset was identified.
+Records containing zero coordinates were then matched with other records sharing the same LOCATION.
+The most frequent coordinate pair for that location was used to replace the missing coordinates.
+After applying this correction, an additional validation check was performed to identify any remaining records containing zero coordinates.
+This approach ensures that missing spatial information is recovered using real coordinates observed in the dataset, rather than introducing arbitrary or externally generated geographic values.
+
+---
+
+Stakeholder Update — Geographic Data Handling
+
+Subject: Geographic Coordinate Validation and Recovery Approach
+
+Good afternoon,
+During the geographic validation of the dataset, an additional check was performed on the LOCATION, LAT, and LON variables to verify the consistency of spatial information.
+The analysis showed that most LOCATION values correspond to one or two geographic coordinate pairs, indicating stable spatial encoding across the dataset. A limited number of major streets are associated with a large number of coordinate pairs due to their geographic extent across the city.
+In addition, some records were found to contain missing geographic coordinates (LAT = 0 and LON = 0). To address this issue, these records were matched with other records sharing the same LOCATION that contained valid coordinates. The most frequent latitude–longitude pair observed for each location was then used to replace the missing values.
+A validation check was performed after the replacement to identify any remaining records with zero coordinates. These remaining cases will be reviewed and may be excluded from geographic visualizations if necessary.
+This approach allows the analysis to preserve spatial information while ensuring that missing coordinates are recovered using consistent values already present in the dataset.
+Please let me know if you would prefer an alternative approach for handling these geographic records before proceeding with the final spatial analysis.
+
+Kind regards,
+Manuel Marrocco
+Data Analyst
+
+---
+
+Subject: Re: Geographic Coordinate Validation and Recovery Approach
+
+Good afternoon Manuel,
+Thank you for the update and for explaining the validation process clearly.
+The approach you used to recover missing geographic coordinates by matching records with the same LOCATION and using the most frequent latitude–longitude pair is reasonable and consistent with how we typically handle this type of issue. Using coordinates already present in the dataset helps maintain consistency without introducing external assumptions.
+If there are still some records with LAT = 0 and LON = 0 after the recovery step, it’s fine to exclude those from the geographic visualizations if valid coordinates cannot be determined. Those records can remain in the dataset for the other analyses, such as crime type frequencies, demographic patterns, or time trends.
+Please make sure this recovery method and any exclusions used for the maps are documented in the project notes so the process remains transparent.
+You can proceed with the geographic analysis.
+Let us know if any other spatial issues appear during the next steps.
+
+Best regards,
+Public Safety Strategy Team
+City Public Safety Department
+Analyze victim demographics and weapon usage
+
+---
+
+Analyze victim demographics using:
+Vict Age
+Vict Sex
+
+Analyze weapon usage patterns using:
+Weapon Desc
+Present results using summary tables and visualizations
+Highlight meaningful patterns or relationships between crime types, victims, and weapon usage.
+
+
+
+Data transparency
+
+Throughout the analysis:
+Maintain full time coverage of the dataset
+Clearly document how data quality issues were handled (e.g., missing age values, recoded Vict Sex categories).
