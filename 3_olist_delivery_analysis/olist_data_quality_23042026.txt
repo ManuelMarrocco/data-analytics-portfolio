@@ -1,0 +1,883 @@
+DATA QUALITY JOURNAL — CONTEXT AND STARTING POINT
+
+ITA:
+Questo Data Quality Journal nasce come fase preliminare di data discovery e light data quality.
+Durante l’allineamento iniziale, lo stakeholder ha segnalato un problema di insoddisfazione cliente, ipotizzando un possibile collegamento con i tempi di consegna e con l’esperienza post-consegna. Tuttavia, non erano disponibili KPI aziendali già definiti, metriche operative strutturate o una causa secondaria confermata.
+Per questo motivo, prima di definire uno Scope of Work definitivo e prima di iniziare l’analisi, è stato necessario verificare se il dataset fosse accessibile, strutturato, coerente e utilizzabile per costruire KPI misurabili.
+La fase di data quality non è quindi partita come semplice pulizia tecnica, ma come controllo preliminare per capire:
+- quali dati fossero disponibili;
+- quali tabelle e colonne fossero rilevanti;
+- quali relazioni potessero essere costruite;
+- se i KPI necessari fossero computabili;
+- se esistessero blocchi critici prima dell’analisi.
+
+ENG:
+This Data Quality Journal starts as a preliminary data discovery and light data quality phase.
+During the initial alignment, the stakeholder reported a customer dissatisfaction issue, with a possible connection to delivery times and post-delivery customer experience. However, no predefined business KPIs, structured operational metrics, or confirmed secondary cause were available.
+For this reason, before defining a final Scope of Work and before starting the analysis, it was necessary to verify whether the dataset was accessible, structured, consistent, and usable to build measurable KPIs.
+Therefore, the data quality phase did not start as a simple technical cleaning activity, but as a preliminary check to understand:
+- which data was available;
+- which tables and columns were relevant;
+- which relationships could be built;
+- whether the required KPIs were computable;
+- whether any critical blocking issues existed before the analysis.
+
+
+METADATA & CONTEXT
+
+Metadata Table:
+
+file_name (csv)	                source	              system	        owner	        time_coverage	update_freq	access_level	        business_relevance
+olist_customers_dataset		Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	not aplicable	static dataset	local project access	Customer profile and geographic information
+olist_geolocation_dataset	Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	not aplicable	static dataset	local project access	Geo ref data for ZIP codes, lat/long
+olist_orders_dataset		Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	2016-09 2018-10	static dataset	local project access	Core order lifecycle
+olist_order_items_dataset	Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	2016-09 2020-04	static dataset	local project access	Item, product/seller refs, price, freight
+olist_order_payments_dataset	Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle not aplicable	static dataset	local project access	Payment method, installments, and values
+olist_order_reviews_dataset	Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	2016-10 2018-10	static dataset	local project access	Customer review scores and timestamps
+olist_products_dataset		Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	not aplicable	static dataset	local project access	Product category, dimensions, and weight
+olist_sellers_dataset		Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	not aplicable	static dataset	local project access	Seller location and identifier information
+product_category_name		Kaggle - OLIST	CSV / PostgreSQL	OLIST / Kaggle	not aplicable	static dataset	local project access	Translation table for category names
+
+CONTEXT
+
+WHO:
+The dataset comes from the OLIST Brazilian E-Commerce dataset, provided through Kaggle. In the project simulation, the business stakeholder is the Olist Operation Manager.
+WHAT:
+The dataset represents e-commerce marketplace operations, including customers, sellers, orders, order items, payments, reviews, products, geolocation data, and product category translations.
+WHERE:
+The original files are CSV files downloaded from Kaggle and imported into a local PostgreSQL database named "olist", under the "public" schema.
+WHEN:
+The main transactional data covers the available OLIST order period, mainly from 2016 to 2018. Static reference tables, such as products, sellers, customers, geolocation, and category translations, do not represent a transaction period by themselves.
+WHY:
+The data is used to investigate customer dissatisfaction, with a focus on delivery performance, delivery expectation gaps, customer reviews, and possible operational patterns linked to negative customer experience.
+HOW:
+The data was downloaded through Python using kagglehub, copied into the project directory, imported into PostgreSQL using COPY / copy_expert, and then validated through Python and SQL data quality checks.
+
+FILE TYPE AND FILE SIZE ASSESSMENT
+
+File type:
+The source files are CSV files.
+Main tools used:
+Python, PostgreSQL, SQL, pandas, psycopg2, SQLAlchemy, DBeaver.
+Reason:
+The dataset is composed of multiple CSV files with relational structure. PostgreSQL was selected as the main working environment because it allows efficient bulk loading, structured validation, joins, data type conversion, and scalable SQL analysis.
+File size assessment:
+The copied dataset size is approximately 120 MB. During the initial workflow, a heavier import approach using pandas/to_sql was considered inefficient for the operational context, so PostgreSQL COPY / copy_expert was used instead.
+Tool decision:
+Excel was not selected as the main tool because the dataset is relational and contains multiple tables.
+Python was used for automation, file handling, import orchestration, and dynamic checks.
+PostgreSQL was used as the source of truth for validation, data type conversion, logical checks, KPI readiness, and future analysis.
+Decision:
+Python + PostgreSQL is the appropriate setup for this dataset.
+
+SUMMARY TABLE
+
+table_name                          row_count   column_count   entities                    keys                             time_range
+olist_customers_dataset             99441       5              customers                   customer_id                      not applicable
+olist_geolocation_dataset           1000163     5              geolocation / ZIP codes     geolocation_zip_code_prefix      not applicable
+olist_orders_dataset                99441       8              orders                      order_id, customer_id            2016-09 to 2018-10
+olist_order_items_dataset           112650      7              order items                 order_id, product_id, seller_id  linked to orders period
+olist_order_payments_dataset        103886      5              payments                    order_id                         linked to orders period
+olist_order_reviews_dataset         99224       7              reviews                     review_id, order_id              2016-10 to 2018-10
+olist_products_dataset              32951       9              products                    product_id                       not applicable
+olist_sellers_dataset               3095        4              sellers                     seller_id                        not applicable
+product_category_name_translation   71          2              category translations       product_category_name            not applicable
+
+TABLE PROFILES
+
+Dataset: olist_customers_dataset
+type: dimension
+granularity: one row per customer_id
+primary_key: customer_id
+foreign_keys: none
+relationships: customer_id → olist_orders_dataset.customer_id
+
+Dataset: olist_geolocation_dataset
+type: reference / dimension
+granularity: one row per geolocation ZIP and coordinate combination
+primary_key: no formal primary key identified
+foreign_keys: none
+relationships: geolocation_zip_code_prefix → customer_zip_code_prefix / seller_zip_code_prefix
+
+Dataset: olist_orders_dataset
+type: fact
+granularity: one row per order_id
+primary_key: order_id
+foreign_keys: customer_id
+relationships:
+customer_id → olist_customers_dataset.customer_id
+order_id → olist_order_items_dataset.order_id
+order_id → olist_order_payments_dataset.order_id
+order_id → olist_order_reviews_dataset.order_id
+
+Dataset: olist_order_items_dataset
+type: fact
+granularity: one row per order item
+primary_key: composite key order_id + order_item_id
+foreign_keys: order_id, product_id, seller_id
+relationships:
+order_id → olist_orders_dataset.order_id
+product_id → olist_products_dataset.product_id
+seller_id → olist_sellers_dataset.seller_id
+
+Dataset: olist_order_payments_dataset
+type: fact
+granularity: one row per payment transaction / payment sequence
+primary_key: no formal primary key identified
+foreign_keys: order_id
+relationships:
+order_id → olist_orders_dataset.order_id
+
+Dataset: olist_order_reviews_dataset
+type: fact
+granularity: one row per review_id / order review
+primary_key: review_id
+foreign_keys: order_id
+relationships:
+order_id → olist_orders_dataset.order_id
+
+Dataset: olist_products_dataset
+type: dimension
+granularity: one row per product_id
+primary_key: product_id
+foreign_keys: product_category_name
+relationships:
+product_id → olist_order_items_dataset.product_id
+product_category_name → product_category_name_translation.product_category_name
+
+Dataset: olist_sellers_dataset
+type: dimension
+granularity: one row per seller_id
+primary_key: seller_id
+foreign_keys: none
+relationships:
+seller_id → olist_order_items_dataset.seller_id
+
+Dataset: product_category_name_translation
+type: reference / dimension
+granularity: one row per product category
+primary_key: product_category_name
+foreign_keys: none
+relationships:
+product_category_name → olist_products_dataset.product_category_name
+
+DATA DICTIONARY — CORE FIELDS
+
+table_name                         field                          type        unit / format        description
+
+olist_orders_dataset               order_id                       text        identifier           Unique order identifier
+olist_orders_dataset               customer_id                    text        identifier           Customer identifier linked to customers table
+olist_orders_dataset               order_status                   text        category             Order lifecycle status
+olist_orders_dataset               order_purchase_timestamp       timestamp   date/time            Order purchase timestamp
+olist_orders_dataset               order_approved_at              timestamp   date/time            Order approval timestamp
+olist_orders_dataset               order_delivered_carrier_date   timestamp   date/time            Date when the order was delivered to the carrier
+olist_orders_dataset               order_delivered_customer_date  timestamp   date/time            Date when the order was delivered to the customer
+olist_orders_dataset               order_estimated_delivery_date  timestamp   date/time            Estimated delivery date communicated to the customer
+
+olist_order_items_dataset          order_id                       text        identifier           Order identifier linked to orders table
+olist_order_items_dataset          order_item_id                  numeric     sequence             Item sequence within the order
+olist_order_items_dataset          product_id                     text        identifier           Product identifier linked to products table
+olist_order_items_dataset          seller_id                      text        identifier           Seller identifier linked to sellers table
+olist_order_items_dataset          shipping_limit_date            timestamp   date/time            Seller shipping deadline
+olist_order_items_dataset          price                          numeric     BRL                  Item price
+olist_order_items_dataset          freight_value                  numeric     BRL                  Freight / shipping cost charged for the item
+
+olist_order_payments_dataset       order_id                       text        identifier           Order identifier linked to orders table
+olist_order_payments_dataset       payment_sequential             numeric     sequence             Payment sequence number for the order
+olist_order_payments_dataset       payment_type                   text        category             Payment method
+olist_order_payments_dataset       payment_installments           numeric     count                Number of installments
+olist_order_payments_dataset       payment_value                  numeric     BRL                  Payment amount
+
+olist_order_reviews_dataset        review_id                      text        identifier           Review identifier
+olist_order_reviews_dataset        order_id                       text        identifier           Order identifier linked to orders table
+olist_order_reviews_dataset        review_score                   numeric     score 1-5            Customer review score
+olist_order_reviews_dataset        review_comment_title           text        free text            Review title
+olist_order_reviews_dataset        review_comment_message         text        free text            Review message
+olist_order_reviews_dataset        review_creation_date           timestamp   date/time            Review creation date
+olist_order_reviews_dataset        review_answer_timestamp        timestamp   date/time            Review answer timestamp
+
+olist_customers_dataset            customer_id                    text        identifier           Customer identifier
+olist_customers_dataset            customer_unique_id             text        identifier           Unique customer identifier
+olist_customers_dataset            customer_zip_code_prefix       text        ZIP code             Customer ZIP code prefix
+olist_customers_dataset            customer_city                  text        city                 Customer city
+olist_customers_dataset            customer_state                 text        state code           Customer state
+
+olist_products_dataset             product_id                     text        identifier           Product identifier
+olist_products_dataset             product_category_name          text        category             Product category name
+olist_products_dataset             product_weight_g               numeric     grams                Product weight
+olist_products_dataset             product_length_cm              numeric     centimeters          Product length
+olist_products_dataset             product_height_cm              numeric     centimeters          Product height
+olist_products_dataset             product_width_cm               numeric     centimeters          Product width
+
+olist_sellers_dataset              seller_id                      text        identifier           Seller identifier
+olist_sellers_dataset              seller_zip_code_prefix         text        ZIP code             Seller ZIP code prefix
+olist_sellers_dataset              seller_city                    text        city                 Seller city
+olist_sellers_dataset              seller_state                   text        state code           Seller state
+
+olist_geolocation_dataset          geolocation_zip_code_prefix    text        ZIP code             ZIP code prefix used for geographic reference
+olist_geolocation_dataset          geolocation_lat                numeric     coordinate           Latitude
+olist_geolocation_dataset          geolocation_lng                numeric     coordinate           Longitude
+olist_geolocation_dataset          geolocation_city               text        city                 Geolocation city
+olist_geolocation_dataset          geolocation_state              text        state code           Geolocation state
+
+product_category_name_translation  product_category_name          text        category             Original product category name
+product_category_name_translation  product_category_name_english  text        category             English product category name
+
+DATA QUALITY CHECKS BY TABLE
+
+Dataset: olist_customers_dataset
+Missing Values:
+No NULL values detected in key column customer_id.
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+ZIP code fields kept as text to preserve possible leading zeros.
+customer_city and customer_state validated as categorical/text fields.
+Invalid Values:
+customer_zip_code_prefix validated as 5 numeric digits.
+customer_state validated as 2 uppercase letters.
+Inconsistencies:
+customer_city may contain spelling variations or accent differences.
+No manual normalization applied.
+Logical Checks:
+customer_id can be linked to olist_orders_dataset.customer_id.
+Outliers:
+Not applicable for this table.
+
+Dataset: olist_geolocation_dataset
+Missing Values:
+No completely empty columns detected.
+Duplicates:
+128,174 duplicated groups detected.
+Duplicates were flagged but not corrected.
+Data Types:
+geolocation_zip_code_prefix kept as text.
+geolocation_lat and geolocation_lng converted to numeric.
+Invalid Values:
+ZIP code format validated as 5 numeric digits.
+Inconsistencies:
+geolocation_city contains variants and inconsistencies.
+Same ZIP code can appear multiple times with different or repeated coordinates.
+Logical Checks:
+geolocation_zip_code_prefix can be used as relationship key with customer and seller ZIP code prefixes.
+Outliers:
+No blocking coordinate issue documented at this stage.
+
+Dataset: olist_orders_dataset
+Missing Values:
+No NULL values detected in key column order_id.
+Date fields required for delivery KPIs are available for almost all delivered orders.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+All order date fields converted to timestamp.
+order_status validated as categorical text.
+Invalid Values:
+No invalid order_status format detected.
+Inconsistencies:
+166 orders have order_delivered_carrier_date earlier than order_purchase_timestamp.
+23 orders have order_delivered_customer_date earlier than order_delivered_carrier_date.
+Most carrier-before-purchase anomalies show small time differences; 2 severe cases were flagged.
+Logical Checks:
+Order date sequence issues were flagged and documented.
+No correction applied.
+Outliers:
+Temporal anomalies were flagged, not removed.
+
+Dataset: olist_order_items_dataset
+Missing Values:
+No NULL values detected in key fields order_id, product_id, seller_id.
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+order_item_id, price and freight_value converted to numeric.
+shipping_limit_date converted to timestamp.
+Invalid Values:
+No negative price or freight_value detected.
+No order_item_id <= 0 detected.
+Inconsistencies:
+High prices reviewed in marketplace context and considered plausible high-value records.
+Logical Checks:
+order_id links to orders.
+product_id links to products.
+seller_id links to sellers.
+Outliers:
+High price and high freight values reviewed.
+Highest freight values are linked to heavy or bulky products and considered plausible.
+
+Dataset: olist_order_payments_dataset
+Missing Values:
+No NULL values detected in key field order_id.
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+payment_sequential, payment_installments and payment_value converted to numeric.
+payment_type validated as categorical text.
+Invalid Values:
+No negative payment_value detected.
+Zero or very low payment values were inspected.
+Inconsistencies:
+Order total vs payment total differences detected and reviewed.
+Differences were considered plausible in the marketplace context due to fees, cashback, vouchers, discounts or operational payment logic.
+Logical Checks:
+order_id links to orders.
+Multiple payment rows per order are possible due to payment sequence or mixed payment methods.
+Outliers:
+High payment values and zero/low payment values reviewed and not treated as automatic errors.
+
+Dataset: olist_order_reviews_dataset
+Missing Values:
+No NULL values detected in review_score.
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+review_score converted to numeric.
+review_creation_date and review_answer_timestamp converted to timestamp.
+Invalid Values:
+review_score validated between 1 and 5.
+Inconsistencies:
+Free-text review fields were not normalized or analyzed in this phase.
+Logical Checks:
+order_id links reviews to orders.
+Review KPIs are fully computable.
+Outliers:
+Not applicable for review_score because it is a bounded 1–5 scale.
+
+Dataset: olist_products_dataset
+Missing Values:
+No NULL values detected in key field product_id.
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+Product numeric fields converted to numeric.
+product_category_name validated as normalized categorical text.
+Invalid Values:
+4 products detected with product_weight_g = 0.
+Product dimensions are positive for these records.
+Inconsistencies:
+product_weight_g = 0 interpreted as missing or incorrectly recorded weight, not real zero weight.
+Logical Checks:
+product_id links to order_items.
+product_category_name links to translation table.
+Outliers:
+Only 4 zero-weight records detected; not considered blocking.
+
+Dataset: olist_sellers_dataset
+Missing Values:
+No NULL values detected in key field seller_id.
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+seller_zip_code_prefix kept as text.
+seller_city and seller_state validated as categorical/text fields.
+Invalid Values:
+seller_zip_code_prefix validated as 5 numeric digits.
+seller_state validated as 2 uppercase letters.
+Inconsistencies:
+seller_city may contain spelling variations or accent differences.
+No manual normalization applied.
+Logical Checks:
+seller_id links to order_items.
+Outliers:
+Not applicable for this table.
+
+Dataset: product_category_name_translation
+Missing Values:
+No completely empty columns detected.
+Duplicates:
+No full-row duplicate issue documented for this table.
+Data Types:
+Category fields kept as text.
+Invalid Values:
+No invalid category structure documented.
+Inconsistencies:
+This table is used only as category translation reference.
+Logical Checks:
+product_category_name links to olist_products_dataset.product_category_name.
+Outliers:
+Not applicable for this table.
+
+LIMITATIONS
+incomplete_data:
+A small number of delivered orders are not fully computable for delivery KPIs due to missing required delivery date fields.
+Delivery KPIs are computable on 96,470 delivered orders out of 96,478.
+Delivery-review relationship KPIs are computable on 96,353 delivered orders linked to reviews out of 96,361.
+misaligned_definitions:
+No official business KPIs, internal Service Level Agreement. definitions, or dissatisfaction categories were provided by the stakeholder.
+The analysis uses dataset-based definitions for delivery delay, delivery expectation gap, review score, and negative review rate.
+data_gaps:
+Customer support tickets, complaints, refund requests, post-purchase communications, and internal customer service records are not available.
+Review text is available but not analyzed in depth during this phase.
+External logistics or carrier data is not available.
+reliability_issues:
+City fields contain spelling variations, accent differences, and inconsistent formats.
+The geolocation table contains duplicated groups and multiple records for some ZIP code prefixes.
+Some temporal inconsistencies were detected in order delivery dates.
+Some payment/order total differences exist and were considered plausible in the marketplace context, but not fully reconciled as accounting records.
+cleaning_limitations:
+No destructive cleaning was applied.
+No rows were deleted.
+No original values were overwritten.
+Anomalies were flagged and documented, while original data was preserved.
+
+DATA ERRORS — DECISION FLOW
+
+1. Can the dataset be corrected or replaced?
+Decision:
+No corrected dataset was requested at this stage.
+Reason:
+The detected issues do not block the analysis. Most anomalies are limited in volume or can be handled through documentation, filtering rules, or interpretation limits.
+
+2. Is there enough data to proceed without correcting the wrong records?
+Decision:
+Yes.
+Reason:
+The number of non-computable records for delivery and delivery-review KPIs is minimal compared with the total number of usable records.
+Delivery KPIs are computable on 96,470 delivered orders out of 96,478.
+Delivery-review relationship KPIs are computable on 96,353 delivered orders linked to reviews out of 96,361.
+
+3. Can proxy variables be used if needed?
+Decision:
+Partially.
+Reason:
+The dataset does not contain internal customer expectation data, customer support tickets, or complaint categories.
+However, order_estimated_delivery_date can be used as a proxy for the delivery expectation communicated to the customer.
+
+4. Can more data be collected?
+Decision:
+Not within the current project scope.
+Reason:
+The analysis is based on the available OLIST dataset. External logistics data, internal customer support data, and additional operational records are not included.
+
+5. Does the business objective need to be modified?
+Decision:
+No major modification required.
+Reason:
+The project can proceed with the current objective, but limitations must be declared.
+The analysis will focus on delivery performance, delivery expectation gap, customer reviews, and exploratory operational patterns.
+Final decision:
+Proceed with analysis under WARNING status.
+
+WARNING:
+These results are based on current data availability and may be subject to limitations.
+
+CLEANING STATUS
+Cleaning approach:
+No destructive cleaning was applied to the original dataset.
+
+Applied actions:
+- CSV files were imported into PostgreSQL.
+- All columns were initially imported as TEXT for robust loading.
+- Data types were converted in PostgreSQL after validation.
+- Numeric fields were converted to numeric types.
+- Date and timestamp fields were converted to timestamp.
+- ZIP code fields were kept as text to preserve possible leading zeros.
+- Data quality issues were flagged and documented.
+- No rows were deleted.
+- No original values were overwritten.
+
+Not applied:
+- No manual city normalization was applied.
+- No geolocation duplicate removal was applied.
+- No product weight correction was applied.
+- No temporal anomaly correction was applied.
+- No payment reconciliation correction was applied.
+- No free-text review cleaning was applied.
+
+Reason:
+The goal of this phase was to validate, document, and prepare the dataset for analysis without altering the original records. Corrections or exclusions will only be applied later if explicitly required by the analysis logic and documented.
+
+FINAL PREPROCESSING CHECK
+
+data_quality:
+WARNING
+
+Reason:
+The dataset is usable for analysis, but some documented issues remain: duplicated geolocation records, minor temporal inconsistencies, 4 products with zero weight, and small numbers of non-computable delivery records.
+data_dictionary:
+OK - CORE FIELDS DOCUMENTED
+
+Reason:
+A core data dictionary was created for the fields required for relationships, KPI checks, delivery analysis, review analysis, and exploratory segmentation.
+granularity:
+OK
+
+Reason:
+The granularity of each main table was identified and documented. Main delivery and review KPIs will be handled at order_id level to avoid duplication.
+relationships:
+OK
+
+Reason:
+Main relationship keys were identified and documented, including order_id, customer_id, product_id, seller_id, and product_category_name.
+kpi_feasibility:
+OK
+
+Reason:
+STEP 6 confirmed that delivery KPIs, review KPIs, and delivery-review relationship KPIs are computable with no blocking issues.
+limitations:
+DOCUMENTED
+
+Reason:
+Known limitations were documented, including missing internal business KPI definitions, unavailable customer support data, geolocation duplicates, city inconsistencies, and non-destructive cleaning choices.
+cleaning:
+PARTIAL
+
+Reason:
+Data type conversions were completed, but no destructive cleaning was applied. Anomalies were flagged and documented while preserving original data.
+final_decision:
+PROCEED WITH ANALYSIS UNDER WARNING STATUS
+
+Reason:
+The dataset is ready for analysis, but results must be interpreted with documented limitations.
+
+ACTIVITY LOG
+
+olist.py → ingestion, struttura, light data quality Python
+01_step3_data_type_checks.sql
+02_step3_data_type_conversions.sql
+03_step4_basic_data_quality.sql
+
+---------------------------------PYTHON ACTIVITIES---------------------------------
+
+1. DATASET DOWNLOAD SETUP
+ITA: Ho impostato il download del dataset da Kaggle tramite kagglehub
+ENG: I set up dataset download from Kaggle using kagglehub
+
+2. SOURCE AND DESTINATION PATH CONFIGURATION
+ITA: Ho definito i percorsi di origine (cache Kaggle) e destinazione (cartella progetto)
+ENG: I defined source (Kaggle cache) and destination (project folder) paths
+
+3. DESTINATION FOLDER CREATION
+ITA: Ho creato la cartella di destinazione se non esistente
+ENG: I created the destination folder if it did not exist
+
+4. POSTGRESQL CONNECTION INITIALIZATION
+ITA: Ho aperto una connessione al database PostgreSQL
+ENG: I initialized a connection to the PostgreSQL database
+
+5. CSV FILE ITERATION
+ITA: Ho iterato su tutti i file CSV presenti nella cartella sorgente
+ENG: I iterated over all CSV files in the source directory
+
+6. FILE COPY TO PROJECT DIRECTORY
+ITA: Ho copiato ogni file CSV nella cartella di progetto
+ENG: I copied each CSV file into the project directory
+
+7. COLUMN HEADER EXTRACTION
+ITA: Ho letto l’header di ogni CSV per ottenere i nomi delle colonne
+ENG: I read each CSV header to extract column names
+
+8. COLUMN NAME CLEANING
+ITA: Ho pulito i nomi delle colonne rimuovendo spazi, virgolette e valori vuoti
+ENG: I cleaned column names by removing spaces, quotes, and empty values
+
+9. TABLE CREATION IN POSTGRESQL
+ITA: Ho creato una tabella per ogni file CSV con colonne definite come TEXT
+ENG: I created a table for each CSV file with all columns defined as TEXT
+
+10. TABLE RESET (DROP & CREATE)
+ITA: Ho eliminato eventuali tabelle esistenti e le ho ricreate
+ENG: I dropped existing tables and recreated them
+
+11. DATA LOAD WITH COPY
+ITA: Ho caricato i dati nei database usando COPY per performance elevate
+ENG: I loaded data into the database using COPY for high performance
+
+12. TRANSACTION COMMIT
+ITA: Ho salvato tutte le modifiche nel database con commit
+ENG: I committed all changes to the database
+
+13. ERROR HANDLING AND ROLLBACK
+ITA: Ho gestito eventuali errori con rollback per evitare dati parziali
+ENG: I handled errors with rollback to avoid partial data loads
+
+14. DATABASE CONNECTION CLOSE
+ITA: Ho chiuso connessione e cursore
+ENG: I closed the database connection and cursor
+
+15. DISPLAY SETTINGS CONFIGURATION
+ITA: Ho configurato pandas per visualizzare tutte le righe e larghezza completa
+ENG: I configured pandas display settings for full rows and width
+
+16. SQLALCHEMY ENGINE CREATION
+ITA: Ho creato un engine per collegare Python a PostgreSQL
+ENG: I created a SQLAlchemy engine to connect Python to PostgreSQL
+
+17. SCHEMA AND COLUMN EXTRACTION
+ITA: Ho estratto schema, tabelle e colonne da information_schema
+ENG: I extracted schema, tables, and columns from information_schema
+
+18. RELATIONSHIP IDENTIFICATION VIA DUPLICATES
+ITA: Ho identificato colonne condivise tra tabelle usando duplicated
+ENG: I identified shared columns across tables using duplicated
+
+19. ROW COUNT CALCULATION
+ITA: Ho calcolato il numero di righe per ogni tabella con query dinamiche
+ENG: I calculated row count for each table using dynamic queries
+
+20. TABLE LIST RETRIEVAL FOR DATA QUALITY
+ITA: Ho recuperato tutte le tabelle per i controlli di qualità
+ENG: I retrieved all tables for data quality checks
+
+21. COLUMN LIST RETRIEVAL PER TABLE
+ITA: Ho recuperato le colonne per ogni tabella
+ENG: I retrieved columns for each table
+
+22. DYNAMIC QUERY GENERATION FOR NON-EMPTY VALUES
+ITA: Ho costruito query dinamiche per contare valori non vuoti per colonna
+ENG: I built dynamic queries to count non-empty values per column
+
+23. NON-EMPTY COLUMN VALIDATION
+ITA: Ho verificato che ogni colonna abbia almeno un valore non vuoto
+ENG: I verified that each column has at least one non-empty value
+
+24. EMPTY COLUMN DETECTION
+ITA: Ho identificato eventuali colonne completamente vuote
+ENG: I detected any completely empty columns
+
+25. DATA QUALITY CONFIRMATION OUTPUT
+ITA: Ho stampato conferma che tutte le colonne non sono vuote
+ENG: I printed confirmation that all columns are not empty
+
+26. PRIMARY KEY NULL CHECK — INTERPRETATION
+
+ITA:Durante lo STEP 4 è stato eseguito un controllo mirato sui valori NULL nelle colonne chiave del dataset (`customer\\\_id`, `order\\\_id`, `product\\\_id`, `seller\\\_id`).
+Il controllo è stato effettuato confrontando l’elenco delle colonne che presentano valori mancanti con l’elenco delle colonne chiave identificate in precedenza come elementi centrali per le relazioni tra le tabelle.
+Dall’analisi è emerso che nessuna delle colonne chiave compare tra quelle con valori NULL. Questo risultato indica che tutte le primary key sono complete e non presentano dati mancanti.
+Dal punto di vista operativo, questo garantisce che ogni record sia identificabile in modo univoco e che le relazioni tra le tabelle possano essere costruite senza perdita di informazioni dovuta a valori mancanti.
+In sintesi, il dataset soddisfa il requisito base di integrità sulle chiavi primarie, consentendo di procedere con le analisi successive in modo affidabile.
+
+ENG:During STEP 4, a targeted check was performed on NULL values within the key columns of the dataset (`customer\\\_id`, `order\\\_id`, `product\\\_id`, `seller\\\_id`).
+The check was carried out by comparing the list of columns containing missing values with the list of key columns previously identified as central elements for table relationships.
+The analysis showed that none of the key columns appear among those with NULL values. This result indicates that all primary keys are complete and contain no missing data.
+From an operational perspective, this ensures that each record can be uniquely identified and that relationships between tables can be established without data loss due to missing values.
+In summary, the dataset meets the basic integrity requirement for primary keys, allowing further analysis to proceed reliably.
+
+27. OBVIOUS DUPLICATES CHECK
+
+ITA:Ho verificato la presenza di righe completamente duplicate su tutte le tabelle del dataset tramite una query dinamica generata in Python. Il controllo ha evidenziato duplicati solo nella tabella `olist\\\_geolocation\\\_dataset`, con 128.174 combinazioni duplicate rilevate.
+ENG:I checked for fully duplicated rows across all dataset tables using a dynamic query generated in Python. The check identified duplicates only in the `olist\\\_geolocation\\\_dataset` table, with 128,174 duplicated combinations detected.
+
+------------------------------------SQL ACTIVITIES-----------------------------------------------
+
+1. CUSTOMER ZIP CODE VALIDATION
+   ITA: Ho verificato che `customer\\\_zip\\\_code\\\_prefix` contenesse solo 5 cifre numeriche
+   ENG: I validated that `customer\\\_zip\\\_code\\\_prefix` contains only 5 numeric digits
+
+2. CUSTOMER CITY FORMAT CHECK
+   ITA: Ho controllato `customer\\\_city` per identificare caratteri anomali (numeri, simboli, accenti)
+   ENG: I checked `customer\\\_city` to identify anomalous characters (numbers, symbols, accents)
+
+3. CUSTOMER STATE VALIDATION
+   ITA: Ho verificato che `customer\\\_state` fosse nel formato corretto (2 lettere maiuscole)
+   ENG: I validated that `customer\\\_state` follows the correct format (2 uppercase letters)
+
+4. GEOLOCATION ZIP CODE VALIDATION
+   ITA: Ho verificato che `geolocation\\\_zip\\\_code\\\_prefix` contenesse solo 5 cifre numeriche
+   ENG: I validated that `geolocation\\\_zip\\\_code\\\_prefix` contains only 5 numeric digits
+
+5. GEOLOCATION CITY FORMAT CHECK
+   ITA: Ho controllato `geolocation\\\_city` per identificare valori non conformi
+   ENG: I checked `geolocation\\\_city` to identify non-conforming values
+
+6. GEOLOCATION CITY-ZIP RELATION ANALYSIS
+   ITA: Ho analizzato la relazione tra `geolocation\\\_city` e `geolocation\\\_zip\\\_code\\\_prefix` per valutare la consistenza geografica
+   ENG: I analyzed the relationship between `geolocation\\\_city` and `geolocation\\\_zip\\\_code\\\_prefix` to assess geographic consistency
+
+7. GEOLOCATION STATE VALIDATION
+   ITA: Ho verificato che `geolocation\\\_state` fosse nel formato corretto (2 lettere maiuscole)
+   ENG: I validated that `geolocation\\\_state` follows the correct format (2 uppercase letters)
+
+8. GEOLOCATION COORDINATES CONVERSION
+   ITA: Ho convertito `geolocation\\\_lat` e `geolocation\\\_lng` da testo a formato numerico
+   ENG: I converted `geolocation\\\_lat` and `geolocation\\\_lng` from text to numeric format
+
+9. GEOLOCATION COLUMN TYPE VERIFICATION
+   ITA: Ho verificato i tipi di dato della tabella `olist\\\_geolocation\\\_dataset` tramite information_schema
+   ENG: I verified column data types for `olist\\\_geolocation\\\_dataset` using information_schema
+
+10. ORDER ITEMS INTEGER CONSISTENCY CHECK
+    ITA: Ho verificato che `order\\\_item\\\_id` non contenesse valori decimali
+    ENG: I checked that `order\\\_item\\\_id` does not contain decimal values
+
+11. ORDER ITEMS NUMERIC FORMAT VALIDATION
+    ITA: Ho controllato che `price` e `freight\\\_value` contenessero solo valori numerici validi
+    ENG: I validated that `price` and `freight\\\_value` contain only valid numeric values
+
+12. ORDER ITEMS DATE FORMAT VALIDATION
+    ITA: Ho verificato il formato corretto di `shipping\\\_limit\\\_date`
+    ENG: I validated the correct format of `shipping\\\_limit\\\_date`
+
+13. ORDER ITEMS DATE CONVERSION CHECK
+    ITA: Ho utilizzato `to\\\_timestamp` per testare la convertibilità delle date
+    ENG: I used `to\\\_timestamp` to test date convertibility
+
+14. ORDER ITEMS DATA TYPE CONVERSION
+    ITA: Ho convertito `order\\\_item\\\_id`, `price`, `freight\\\_value` e `shipping\\\_limit\\\_date` nei tipi corretti
+    ENG: I converted `order\\\_item\\\_id`, `price`, `freight\\\_value`, and `shipping\\\_limit\\\_date` to correct data types
+
+15. ORDER ITEMS DATE VALIDITY CHECK
+    ITA: Ho verificato la validità delle date controllando mese e giorno
+    ENG: I verified date validity by checking month and day
+
+16. ORDER ITEMS COLUMN TYPE VERIFICATION
+    ITA: Ho verificato i tipi di dato della tabella `olist\\\_order\\\_items\\\_dataset`
+    ENG: I verified column data types for `olist\\\_order\\\_items\\\_dataset`
+
+17. ORDER PAYMENTS NUMERIC VALIDATION
+    ITA: Ho verificato che `payment\\\_sequential` e `payment\\\_installments` contenessero valori numerici
+    ENG: I validated that `payment\\\_sequential` and `payment\\\_installments` contain numeric values
+
+18. PAYMENT TYPE DISTINCT CHECK
+    ITA: Ho analizzato i valori distinti della colonna `payment\\\_type`
+    ENG: I analyzed distinct values of the `payment\\\_type` column
+
+19. PAYMENT VALUE FORMAT VALIDATION
+    ITA: Ho controllato il formato numerico di `payment\\\_value`
+    ENG: I validated the numeric format of `payment\\\_value`
+
+20. ORDER PAYMENTS DATA TYPE CONVERSION
+    ITA: Ho convertito le colonne numeriche della tabella pagamenti
+    ENG: I converted numeric columns in the payments table
+
+21. ORDER PAYMENTS COLUMN TYPE VERIFICATION
+    ITA: Ho verificato i tipi di dato della tabella `olist\\\_order\\\_payments\\\_dataset`
+    ENG: I verified column data types for `olist\\\_order\\\_payments\\\_dataset`
+
+22. ORDER REVIEWS SCORE VALIDATION
+    ITA: Ho verificato che `review\\\_score` contenesse solo valori numerici
+    ENG: I validated that `review\\\_score` contains numeric values
+
+23. ORDER REVIEWS DATE FORMAT VALIDATION
+    ITA: Ho verificato il formato delle colonne temporali delle review
+    ENG: I validated date format in review timestamp columns
+
+24. ORDER REVIEWS DATA TYPE CONVERSION
+    ITA: Ho convertito `review\\\_score` e le date nel formato corretto
+    ENG: I converted `review\\\_score` and date columns to correct types
+
+25. ORDER REVIEWS COLUMN TYPE VERIFICATION
+    ITA: Ho verificato i tipi di dato della tabella review
+    ENG: I verified column data types for the reviews table
+
+26. ORDER REVIEWS DATE VALIDITY CHECK
+    ITA: Ho controllato la validità delle date nelle review
+    ENG: I verified date validity in the reviews table
+
+27. ORDER STATUS DISTINCT CHECK
+    ITA: Ho analizzato i valori distinti di `order\\\_status`
+    ENG: I analyzed distinct values of `order\\\_status`
+
+28. ORDERS DATE FORMAT VALIDATION
+    ITA: Ho verificato il formato delle colonne temporali della tabella ordini
+    ENG: I validated timestamp formats in the orders table
+
+29. ORDER STATUS FORMAT VALIDATION
+    ITA: Ho verificato che `order\\\_status` fosse composto solo da lettere minuscole
+    ENG: I validated that `order\\\_status` contains only lowercase letters
+
+30. ORDERS DATA TYPE CONVERSION
+    ITA: Ho convertito tutte le colonne temporali della tabella ordini in timestamp
+    ENG: I converted all timestamp columns in the orders table
+
+31. ORDERS DATE VALIDITY CHECK
+    ITA: Ho verificato la validità delle date nella tabella ordini
+    ENG: I verified date validity in the orders table
+
+32. ORDERS COLUMN TYPE VERIFICATION
+    ITA: Ho verificato i tipi di dato della tabella `olist\\\_orders\\\_dataset`
+    ENG: I verified column data types for `olist\\\_orders\\\_dataset`
+
+33. PRODUCT CATEGORY VALIDATION
+    ITA: Ho verificato che `product\\\_category\\\_name` fosse nel formato corretto
+    ENG: I validated that `product\\\_category\\\_name` follows the correct format
+
+34. PRODUCT NUMERIC VALIDATION
+    ITA: Ho verificato che le colonne numeriche dei prodotti contenessero valori validi
+    ENG: I validated that product numeric columns contain valid values
+
+35. PRODUCT DATA TYPE CONVERSION
+    ITA: Ho convertito le colonne numeriche della tabella prodotti
+    ENG: I converted numeric columns in the products table
+
+36. PRODUCT COLUMN TYPE VERIFICATION
+    ITA: Ho verificato i tipi di dato della tabella prodotti
+    ENG: I verified column data types for the products table
+
+37. SELLER ZIP AND STATE VALIDATION
+    ITA: Ho verificato `seller\\\_zip\\\_code\\\_prefix` e `seller\\\_state`
+    ENG: I validated `seller\\\_zip\\\_code\\\_prefix` and `seller\\\_state`
+
+38. SELLER CITY FORMAT CHECK
+    ITA: Ho controllato `seller\\\_city` identificando inconsistenze
+    ENG: I checked `seller\\\_city` identifying inconsistencies
+
+39. PRODUCT WEIGHT ZERO VALUE CHECK
+    ITA:Il controllo sui valori impossibili ha rilevato 4 prodotti con product_weight_g = 0 nella tabella olist_products_dataset. Questi valori sono stati interpretati come peso mancante o non correttamente valorizzato, piuttosto che come peso reale pari a zero. Considerando che il problema di business riguarda i tempi di consegna, il peso del prodotto potrebbe essere una variabile rilevante per future analisi logistiche. Tuttavia, l’anomalia riguarda solo 4 record, quindi al momento non sembra sufficiente per spiegare un problema generale sui tempi di consegna. I record sono stati segnalati, senza applicare correzioni in questa fase.
+    ENG:The impossible values check detected 4 products with product_weight_g = 0 in the olist_products_dataset table. These values were interpreted as missing or incorrectly recorded weight information rather than actual zero weight. Since the business issue is related to delivery times, product weight may be a relevant variable for future logistics analysis. However, the anomaly affects only 4 records, so it does not appear sufficient at this stage to explain a broader delivery-time issue. The records were flagged, with no correction applied at this stage.
+
+40. LOGICAL DATE CONSISTENCY CHECK
+    ITA:Il controllo di coerenza temporale ha rilevato due anomalie nella tabella `olist\\\_orders\\\_dataset`: 166 ordini risultano consegnati al corriere prima della data di acquisto e 23 ordini risultano consegnati al cliente prima della consegna al corriere. Queste sequenze sono logicamente impossibili e sono state segnalate come problemi di qualità del dato. Non è stata applicata alcuna correzione in questa fase; i record richiedono un approfondimento tramite query di drill-down.
+    ENG:The logical date consistency check identified two anomalies in the `olist\\\_orders\\\_dataset` table: 166 orders appear to have been delivered to the carrier before the purchase date, and 23 orders appear to have been delivered to the customer before being delivered to the carrier. These sequences are logically impossible and were flagged as data quality issues. No correction was applied at this stage; the affected records require further drill-down analysis.
+
+41. CARRIER DATE BEFORE PURCHASE — DRILL-DOWN ANALYSIS
+    ITA:È stata eseguita una query di approfondimento sui 166 ordini in cui `order\\\_delivered\\\_carrier\\\_date` risulta precedente a `order\\\_purchase\\\_timestamp`. La query ha calcolato la differenza temporale tra le due date per valutare la gravità dell’anomalia. La maggior parte dei casi presenta uno scarto limitato, generalmente entro poche ore, suggerendo un possibile problema di fuso orario o sincronizzazione tra sistemi. Tuttavia, 2 record presentano differenze molto più ampie, circa 171 giorni e 4 giorni, e sono stati quindi considerati anomalie temporali gravi. Nessuna correzione è stata applicata in questa fase; i record sono stati solo segnalati.
+    ENG:A drill-down query was performed on the 166 orders where `order\\\_delivered\\\_carrier\\\_date` occurs before `order\\\_purchase\\\_timestamp`. The query calculated the time difference between the two dates to assess the severity of the anomaly. Most cases show a limited time gap, generally within a few hours, suggesting a possible timezone or system synchronization issue. However, 2 records show much larger gaps, around 171 days and 4 days, and were therefore considered severe temporal anomalies. No correction was applied at this stage; the records were only flagged.
+
+42. PRICE DISTRIBUTION CHECK
+    ITA: Ho analizzato la distribuzione dei prezzi nella tabella `olist\\\_order\\\_items\\\_dataset` usando minimo, massimo, media, mediana, 95° percentile e 99° percentile
+    ENG: I analyzed the price distribution in the `olist\\\_order\\\_items\\\_dataset` table using minimum, maximum, average, median, 95th percentile, and 99th percentile
+
+43. HIGH PRICE PLAUSIBILITY REVIEW
+    ITA: Ho valutato i prezzi più alti rispetto al contesto del marketplace OLIST e li ho considerati record ad alto valore, non errori automatici di qualità del dato
+    ENG: I reviewed the highest prices in the context of the OLIST marketplace and considered them high-value records, not automatic data quality errors
+
+44. FREIGHT VALUE DISTRIBUTION CHECK
+    ITA: Ho analizzato la distribuzione dei costi di spedizione nella tabella `olist\\\_order\\\_items\\\_dataset` usando minimo, massimo, media, mediana, 95° percentile e 99° percentile
+    ENG: I analyzed the freight value distribution in the `olist\\\_order\\\_items\\\_dataset` table using minimum, maximum, average, median, 95th percentile, and 99th percentile
+
+45. HIGHEST FREIGHT VALUE DRILL-DOWN
+    ITA: Ho ispezionato i costi di spedizione più alti collegandoli a categoria prodotto, peso e dimensioni per valutarne la plausibilità
+    ENG: I inspected the highest freight values by joining them with product category, weight, and dimensions to assess their plausibility
+
+47. PAYMENT VALUE DISTRIBUTION CHECK
+    ITA: Ho analizzato la distribuzione dei valori di pagamento nella tabella `olist\\\_order\\\_payments\\\_dataset` usando minimo, massimo, media, mediana, 95° percentile e 99° percentile
+    ENG: I analyzed the payment value distribution in the `olist\\\_order\\\_payments\\\_dataset` table using minimum, maximum, average, median, 95th percentile, and 99th percentile
+
+48. PAYMENT VALUE DRILL-DOWN
+    ITA: Ho ispezionato sia i pagamenti più alti sia i pagamenti pari a zero o molto bassi, analizzando metodo di pagamento, numero di rate, sequenza pagamento e valore pagato per valutarne la plausibilità nel contesto retail e marketplace
+    ENG: I inspected both the highest payment values and zero or very low payment values by analyzing payment method, number of installments, payment sequence, and paid amount to assess their plausibility in the retail and marketplace context
+
+49. ORDER TOTAL VS PAYMENT TOTAL CHECK
+    ITA: Ho confrontato il totale degli articoli più spedizione con il totale dei pagamenti a livello ordine, aggiungendo il tipo di pagamento per valutare se le differenze fossero compatibili con fee, cashback, voucher, sconti o altre logiche operative di pagamento
+    ENG: I compared item plus freight totals with payment totals at order level and added payment type to assess whether the differences were compatible with fees, cashback, vouchers, discounts or other operational payment logic
+
+50. KPI DEFINITION FROM BUSINESS PROBLEM
+    ITA: Ho tradotto il problema business di insoddisfazione cliente in KPI candidati misurabili, concentrati su tempi di consegna, ritardi e recensioni cliente
+    ENG: I translated the business problem of customer dissatisfaction into measurable candidate KPIs focused on delivery times, delays, and customer reviews
+
+51. DELIVERY KPI COMPUTABILITY CHECK
+    ITA: Ho verificato che i KPI di consegna siano calcolabili sugli ordini consegnati, controllando la presenza delle date necessarie per misurare tempo di consegna, ritardo e tasso di ritardo
+    ENG: I verified that delivery KPIs are computable on delivered orders by checking the required dates needed to measure delivery time, delay and late delivery rate
+
+52. REVIEW KPI COMPUTABILITY CHECK
+    ITA: Ho verificato che i KPI di soddisfazione cliente siano calcolabili controllando la presenza e validità del punteggio recensione
+    ENG: I verified that customer satisfaction KPIs are computable by checking the presence and validity of review scores
+
+53. DELIVERY REVIEW RELATIONSHIP KPI CHECK
+    ITA: Ho verificato che i KPI di relazione tra performance di consegna e soddisfazione cliente siano calcolabili collegando ordini consegnati e recensioni tramite order_id
+    ENG: I verified that relationship KPIs between delivery performance and customer satisfaction are computable by linking delivered orders and reviews through order_id
+
+54. FINAL KPI READINESS DECISION
+    ITA: Ho concluso lo STEP 6 confermando che i KPI selezionati sono calcolabili e che non ci sono blocchi rilevanti per l’avvio dell’analisi
+    ENG: I completed STEP 6 by confirming that the selected KPIs are computable and that there are no relevant blocking issues before starting the analysis
+
+55. KPI READINESS SUMMARY QUERY
+    ITA: Ho costruito una query riepilogativa con CTE per verificare in un’unica tabella la computabilità dei KPI di consegna, recensione e relazione consegna-recensione
+    ENG: I built a summary query using CTEs to verify in a single table the computability of delivery, review, and delivery-review relationship KPIs

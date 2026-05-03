@@ -1,0 +1,4 @@
+"delivery_status","orders","avg_review_score","negative_reviews","negative_review_rate_percent","sort_order"
+early,88653,4.29,8186,9.23,1
+late,6409,2.27,4000,62.41,3
+on_time,1291,4.03,160,12.39,2

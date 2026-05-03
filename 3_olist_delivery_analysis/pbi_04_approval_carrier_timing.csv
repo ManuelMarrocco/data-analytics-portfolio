@@ -1,0 +1,4 @@
+"delivery_status","orders","avg_approval_time_days","avg_approval_to_carrier_days","avg_delivery_delay_days","avg_review_score","negative_reviews","negative_review_rate_percent","sort_order"
+early,88639,0.42,2.58,-13.71,4.29,8185,9.23,1
+late,6408,0.51,5.52,10.53,2.27,4000,62.42,3
+on_time,1291,0.52,4.19,0.00,4.03,160,12.39,2

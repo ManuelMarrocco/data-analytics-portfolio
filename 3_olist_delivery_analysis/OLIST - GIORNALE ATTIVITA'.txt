@@ -1,0 +1,1967 @@
+OLIST - GIORNALE ATTIVITA'
+
+1 - IDENTIFY THE PROBLEM → DESIGNING DATA REQUIREMENTS
+
+Business & Data Alignment Meeting
+
+ITA:
+Cronaca incontro – Analista ↔ Stakeholder
+Apertura
+Analista:
+Qual è il problema principale che volete analizzare?
+Stakeholder:
+Abbiamo insoddisfazione da parte dei clienti.
+
+Approfondimento consegne
+Analista:
+Le recensioni negative coinvolgono i tempi di consegna?
+Stakeholder:
+Sì, in parte, ma non abbiamo dati precisi.
+
+Esplorazione del problema
+Analista:
+Perché i clienti sono insoddisfatti anche quando l’ordine arriva?
+Stakeholder:
+Non lo sappiamo con certezza, riceviamo feedback ma non li analizziamo in modo strutturato.
+
+Cause secondarie
+Analista:
+Qual è la seconda maggiore ragione di insoddisfazione?
+Stakeholder:
+Non è chiaro.
+
+Richiesta di informazioni operative
+Analista:
+Può illustrarmi le informazioni che è in grado di quantificare sulle operazioni?
+Stakeholder:
+Non abbiamo KPI o dati strutturati disponibili al momento.
+
+Richiesta contesto
+Analista:
+Mi chiarisca il contesto operativo.
+Stakeholder:
+Gestiamo ordini e consegne, ma non abbiamo un’analisi dettagliata delle performance.
+
+Proposta operativa
+Analista:
+Le propongo di prendermi tra le 24 e le 48 ore, in base alla complessità dei dati, per analizzare i dati disponibili e preparare un piano operativo. Successivamente lo revisioniamo insieme e lo adattiamo alle vostre esigenze.
+Stakeholder:
+Va bene.
+
+ENG:
+Meeting Log – Analyst ↔ Stakeholder
+Opening
+
+Analyst:
+What is the main problem you want to analyze?
+
+Stakeholder:
+We are experiencing customer dissatisfaction.
+
+Delivery Focus
+
+Analyst:
+Do negative reviews involve delivery times?
+
+Stakeholder:
+Yes, partially, but we do not have precise data.
+
+Problem Exploration
+
+Analyst:
+Why are customers dissatisfied even when the order is delivered?
+
+Stakeholder:
+We are not sure. We receive feedback, but we do not analyze it in a structured way.
+
+Secondary Causes
+
+Analyst:
+What is the second main reason for customer dissatisfaction?
+
+Stakeholder:
+It is not clear.
+
+Operational Information Request
+
+Analyst:
+Can you outline what information you are able to quantify regarding operations?
+
+Stakeholder:
+We do not have KPIs or structured data available at the moment.
+
+Context Clarification
+
+Analyst:
+Can you clarify the operational context?
+
+Stakeholder:
+We manage orders and deliveries, but we do not have a detailed performance analysis.
+
+Operational Proposal
+
+Analyst:
+I suggest taking between 24 and 48 hours, depending on the complexity of the data, to analyze the available data and prepare an operational plan. We can then review it together and adjust it to your needs.
+
+Stakeholder:
+That works.
+
+ITA
+Durante la conversazione è emerso che l’azienda sta riscontrando insoddisfazione da parte dei clienti. Il problema sembra essere collegato principalmente ai tempi di consegna e, in alcuni casi, anche all’esperienza del cliente dopo la ricezione dell’ordine.
+Lo stakeholder non dispone di dati strutturati o KPI per quantificare il problema, ma si basa su percezioni operative e feedback generici. Non è chiaro quanto il problema sia diffuso né quali siano le cause principali oltre alle consegne.
+Restano aperti diversi punti: non è stata confermata una relazione diretta tra recensioni negative e tempi di consegna, non sono note le ragioni dell’insoddisfazione dopo la consegna e non è identificata una seconda causa principale.
+Non sono ancora state verificate la disponibilità e la qualità dei dati necessari per l’analisi.
+Il prossimo passo concordato è effettuare una verifica preliminare dei dati disponibili. Successivamente verrà definito uno Scope of Work strutturato per impostare correttamente l’analisi.
+
+ENG
+During the conversation, it emerged that the company is experiencing customer dissatisfaction. The issue appears to be mainly related to delivery times and, in some cases, also to the post-delivery customer experience.
+The stakeholder does not have structured data or defined KPIs to quantify the problem and is relying on operational perception and general feedback. It is not clear how widespread the issue is or what the main drivers are beyond delivery.
+Several points remain unclear: there is no confirmed relationship between negative reviews and delivery times, the reasons for dissatisfaction after delivery are unknown, and a second main cause of dissatisfaction has not been identified.
+The availability and quality of the data required for the analysis have not yet been verified.
+The next agreed step is to perform a preliminary data check. After that, a structured Scope of Work will be defined to properly set up the analysis.
+
+DATA INTAKE
+
+ITA
+Si presenta la necessità di importare più file CSV in PostgreSQL in modo efficiente e senza operazioni manuali ripetitive. L’approccio iniziale con pandas e to_sql consente automazione completa, ma risulta inefficiente per via dell’uso di operazioni INSERT multiple invece di un caricamento massivo che su un totale di 700mb di dati impiega 15 minuti per completare l'operazione.
+Per migliorare le prestazioni si adotta il comando COPY di PostgreSQL, che garantisce velocità elevata ma richiede la presenza preventiva della tabella. Si rende quindi necessario automatizzare anche la creazione della struttura.
+La soluzione prevede l’uso di Python con psycopg2, che consente esecuzione diretta di SQL senza overhead. Lo script scorre i file CSV, utilizza il nome del file come nome della tabella e legge l’intestazione per ricavare le colonne.
+Viene generata dinamicamente una CREATE TABLE, con tutte le colonne definite come TEXT per evitare errori durante l’import. Eventuali tabelle esistenti vengono eliminate per garantire coerenza del processo.
+I dati vengono quindi caricati tramite copy_expert, che esegue COPY mantenendo le prestazioni native di PostgreSQL.
+Il risultato è una pipeline automatizzata che gestisce creazione e import senza intervento manuale. La scelta del tipo TEXT è intenzionale: consente un caricamento rapido e robusto, rimandando la tipizzazione a una fase successiva.
+
+ENG
+There is a need to import multiple CSV files into PostgreSQL efficiently and without repetitive manual operations. The initial approach using pandas and to_sql allows full automation but is inefficient due to the use of multiple INSERT operations instead of a bulk load, resulting in a total processing time of about 15 minutes for 700MB of data.
+To improve performance, the PostgreSQL COPY command is adopted, as it provides high speed but requires the target table to exist beforehand. Therefore, it becomes necessary to automate the table creation process as well.
+The solution involves using Python with psycopg2, which allows direct execution of SQL without additional overhead. The script iterates over CSV files, uses the file name as the table name, and reads the header to extract column names.
+A CREATE TABLE statement is dynamically generated, with all columns defined as TEXT to avoid errors during import. Any existing tables are dropped to ensure process consistency.
+The data is then loaded using copy_expert, which executes the COPY command while preserving PostgreSQL’s native performance.
+The result is a fully automated pipeline that handles both table creation and data import without manual intervention. The choice of the TEXT data type is intentional: it enables fast and robust loading, deferring proper data typing to a later stage
+
+elaborati in 0:00:01.793252 prima creazione
+Path to dataset files: C:\Users\manue\.cache\kagglehub\datasets\olistbr\brazilian-ecommerce\versions\2
+Processing olist_customers_dataset.csv, dimension: 9033957 
+Processing olist_geolocation_dataset.csv, dimension: 61273883 
+Processing olist_orders_dataset.csv, dimension: 17654914 
+Processing olist_order_items_dataset.csv, dimension: 15438671 
+Processing olist_order_payments_dataset.csv, dimension: 5777138 
+Processing olist_order_reviews_dataset.csv, dimension: 14451670 
+Processing olist_products_dataset.csv, dimension: 2379446 
+Processing olist_sellers_dataset.csv, dimension: 174703 
+Processing product_category_name_translation.csv, dimension: 2613 
+Dataset Size 120.34
+DONE in 0:00:02.095160 in fase di sovrascrittura
+
+STEP 1 — ACCESS
+☑ The file opens correctly
+☑ Readable format (CSV)
+☑ No import errors
+COMPLETE - OK
+
+STEP 2 — STRUCTURE
+☑ Primary key identifiable (or unique identifier exists)
+
+#     table_schema                    table_name  column_name
+# 0        public       olist_customers_dataset  customer_id
+# 10       public          olist_orders_dataset     order_id
+# 11       public          olist_orders_dataset  customer_id
+# 18       public     olist_order_items_dataset     order_id
+# 20       public     olist_order_items_dataset   product_id
+# 21       public     olist_order_items_dataset    seller_id
+# 25       public  olist_order_payments_dataset     order_id
+# 31       public   olist_order_reviews_dataset     order_id
+# 37       public        olist_products_dataset   product_id
+# 46       public         olist_sellers_dataset    seller_id
+
+☑ Row count is plausible (>0)
+
+#    schema                              table     rows
+# 0  public            olist_customers_dataset    99441
+# 1  public          olist_geolocation_dataset  1000163
+# 2  public               olist_orders_dataset    99441
+# 3  public          olist_order_items_dataset   112650
+# 4  public       olist_order_payments_dataset   103886
+# 5  public        olist_order_reviews_dataset    99224
+# 6  public             olist_products_dataset    32951
+# 7  public              olist_sellers_dataset     3095
+# 8  public  product_category_name_translation       71
+
+☑ Column count is consistent
+
+ITA
+Se l’operazione di COPY è andata a buon fine, il numero di colonne è consistente.
+PostgreSQL rifiuta automaticamente qualsiasi riga che non rispetta il numero previsto di colonne.
+Quindi in questo caso la consistenza è garantita dal database. Quindi ok.
+
+ENG
+If the COPY operation completed successfully, the column count is consistent.
+PostgreSQL automatically rejects any rows that do not match the expected number of columns.
+So in this case, consistency is guaranteed by the database. Ok.
+
+☑ Column names are understandable
+                  column_name  
+                  customer_id  
+           customer_unique_id  
+     customer_zip_code_prefix  
+                customer_city  
+               customer_state  
+  geolocation_zip_code_prefix  
+              geolocation_lat  
+              geolocation_lng  
+             geolocation_city  
+            geolocation_state  
+                     order_id  
+                  customer_id  
+                 order_status  
+     order_purchase_timestamp  
+            order_approved_at  
+ order_delivered_carrier_date  
+order_delivered_customer_date  
+order_estimated_delivery_date  
+                     order_id  
+                order_item_id  
+                   product_id  
+                    seller_id  
+          shipping_limit_date  
+                        price  
+                freight_value  
+                     order_id  
+           payment_sequential  
+                 payment_type  
+         payment_installments  
+                payment_value  
+                    review_id  
+                     order_id  
+                 review_score  
+         review_comment_title  
+       review_comment_message  
+         review_creation_date  
+      review_answer_timestamp  
+                   product_id  
+        product_category_name  
+          product_name_lenght  
+   product_description_lenght  
+           product_photos_qty  
+             product_weight_g  
+            product_length_cm  
+            product_height_cm  
+             product_width_cm  
+                    seller_id  
+       seller_zip_code_prefix  
+                  seller_city  
+                 seller_state  
+       ﻿product_category_name  
+product_category_name_english  
+
+OK
+
+☑ No completely empty columns
+
+ITA
+Abbiamo controllato tutte le tabelle del database.
+Per ogni tabella abbiamo preso tutte le colonne e, con una sola query, abbiamo contato quante righe contengono valori non vuoti (non NULL e non stringhe vuote) per ogni colonna.
+Se il conteggio è maggiore di zero, significa che la colonna contiene dati.
+Se fosse stato zero, la colonna sarebbe completamente vuota.
+Dato che non sono state trovate colonne con conteggio zero, possiamo confermare che non esistono colonne completamente vuote.
+
+ENG
+We checked all tables in the database.
+For each table, we retrieved all columns and used a single query to count how many rows contain non-empty values (non NULL and not empty strings) for each column.
+If the count is greater than zero, the column contains data.
+If it were zero, the column would be completely empty.
+Since no columns returned a count of zero, we can confirm that there are no completely empty columns.ù
+
+public.olist_customers_dataset.customer_id -> NOT EMPTY
+public.olist_customers_dataset.customer_unique_id -> NOT EMPTY
+public.olist_customers_dataset.customer_zip_code_prefix -> NOT EMPTY
+public.olist_customers_dataset.customer_city -> NOT EMPTY
+public.olist_customers_dataset.customer_state -> NOT EMPTY
+
+
+public.olist_geolocation_dataset.geolocation_zip_code_prefix -> NOT EMPTY
+public.olist_geolocation_dataset.geolocation_lat -> NOT EMPTY
+public.olist_geolocation_dataset.geolocation_lng -> NOT EMPTY
+public.olist_geolocation_dataset.geolocation_city -> NOT EMPTY
+public.olist_geolocation_dataset.geolocation_state -> NOT EMPTY
+
+
+public.olist_orders_dataset.order_id -> NOT EMPTY
+public.olist_orders_dataset.customer_id -> NOT EMPTY
+public.olist_orders_dataset.order_status -> NOT EMPTY
+public.olist_orders_dataset.order_purchase_timestamp -> NOT EMPTY
+public.olist_orders_dataset.order_approved_at -> NOT EMPTY
+public.olist_orders_dataset.order_delivered_carrier_date -> NOT EMPTY
+public.olist_orders_dataset.order_delivered_customer_date -> NOT EMPTY
+public.olist_orders_dataset.order_estimated_delivery_date -> NOT EMPTY
+
+
+public.olist_order_items_dataset.order_id -> NOT EMPTY
+public.olist_order_items_dataset.order_item_id -> NOT EMPTY
+public.olist_order_items_dataset.product_id -> NOT EMPTY
+public.olist_order_items_dataset.seller_id -> NOT EMPTY
+public.olist_order_items_dataset.shipping_limit_date -> NOT EMPTY
+public.olist_order_items_dataset.price -> NOT EMPTY
+public.olist_order_items_dataset.freight_value -> NOT EMPTY
+
+
+public.olist_order_payments_dataset.order_id -> NOT EMPTY
+public.olist_order_payments_dataset.payment_sequential -> NOT EMPTY
+public.olist_order_payments_dataset.payment_type -> NOT EMPTY
+public.olist_order_payments_dataset.payment_installments -> NOT EMPTY
+public.olist_order_payments_dataset.payment_value -> NOT EMPTY
+
+
+public.olist_order_reviews_dataset.review_id -> NOT EMPTY
+public.olist_order_reviews_dataset.order_id -> NOT EMPTY
+public.olist_order_reviews_dataset.review_score -> NOT EMPTY
+public.olist_order_reviews_dataset.review_comment_title -> NOT EMPTY
+public.olist_order_reviews_dataset.review_comment_message -> NOT EMPTY
+public.olist_order_reviews_dataset.review_creation_date -> NOT EMPTY
+public.olist_order_reviews_dataset.review_answer_timestamp -> NOT EMPTY
+
+
+public.olist_products_dataset.product_id -> NOT EMPTY
+public.olist_products_dataset.product_category_name -> NOT EMPTY
+public.olist_products_dataset.product_name_lenght -> NOT EMPTY
+public.olist_products_dataset.product_description_lenght -> NOT EMPTY
+public.olist_products_dataset.product_photos_qty -> NOT EMPTY
+public.olist_products_dataset.product_weight_g -> NOT EMPTY
+public.olist_products_dataset.product_length_cm -> NOT EMPTY
+public.olist_products_dataset.product_height_cm -> NOT EMPTY
+public.olist_products_dataset.product_width_cm -> NOT EMPTY
+
+
+public.olist_sellers_dataset.seller_id -> NOT EMPTY
+public.olist_sellers_dataset.seller_zip_code_prefix -> NOT EMPTY
+public.olist_sellers_dataset.seller_city -> NOT EMPTY
+public.olist_sellers_dataset.seller_state -> NOT EMPTY
+
+
+public.product_category_name_translation.﻿product_category_name -> NOT EMPTY
+public.product_category_name_translation.product_category_name_english -> NOT EMPTY
+COMPLETE - OK
+
+ITA
+Abbiamo utilizzato Python con SQL (PostgreSQL) per i primi due step perché serviva verificare rapidamente accesso e struttura su più file e tabelle in modo automatizzato.
+
+STEP 1 — ACCESS
+Python è stato usato per:
+scaricare e gestire i file (dataset Kaggle)
+verificare che i file esistano e siano leggibili
+automatizzare l’import nel database tramite PostgreSQL
+PostgreSQL (tramite COPY) è stato usato perché:
+garantisce che il formato CSV sia corretto
+blocca errori di parsing (colonne mancanti, formati non validi)
+
+STEP 2 — STRUCTURE
+Python + SQL è stato usato per analizzare la struttura delle tabelle:
+Python → orchestrazione (loop su tutte le tabelle)
+SQL → interrogazione diretta del database (fonte affidabile)
+Controlli effettuati:
+Row count → tramite query SQL (COUNT(*) o pg_stat_user_tables)
+Column count → implicito nell’import (PostgreSQL garantisce coerenza)
+Column names → letti da information_schema.columns
+No empty columns → verificato con query aggregate su ogni colonna
+Primary key → analizzabile via SQL (anche se non sempre definita nel dataset)
+Il database è stato usato come “fonte di verità” perché:
+i dati sono già strutturati
+i controlli sono più affidabili rispetto al CSV grezzo
+
+ENG
+We used Python with SQL (PostgreSQL) to validate the first two steps because we needed an automated and reliable way to check multiple files and tables.
+
+STEP 1 — ACCESS
+Python was used to:
+download and manage dataset files
+verify that files exist and are readable
+automate the import process into the database
+PostgreSQL (COPY) was used because:
+it enforces correct CSV structure
+it rejects malformed rows (missing or extra columns)
+
+STEP 2 — STRUCTURE
+Python + SQL was used to inspect table structure:
+Python → orchestration (looping through tables)
+SQL → direct database queries (reliable source)
+Checks performed:
+Row count → SQL queries
+Column count → guaranteed by PostgreSQL import
+Column names → retrieved from information_schema
+No empty columns → validated via aggregation queries
+Primary key → identifiable via SQL (if present)
+The database acts as a “source of truth” because:
+data is already structured
+validation is more reliable than raw CSV analysis
+
+python file: olist.py
+
+STEP 3 — DATA TYPES
+
+ITA
+Durante questa fase è stato effettuato un allineamento completo dei tipi di dato su tutte le principali tabelle del dataset OLIST.
+In particolare:
+* Tutte le colonne numeriche (price, freight_value, payment_value, quantità, dimensioni prodotto, ecc.) sono state convertite da testo a formato numerico tramite `CAST`.
+* Tutte le colonne temporali (timestamp di ordini, consegne, review) sono state convertite correttamente in formato `timestamp`, verificando prima la validità del formato tramite regex e successivamente tramite conversione diretta.
+* È stato verificato che non esistano valori non coerenti (mesi > 12, giorni > 31), confermando la correttezza delle date dopo la conversione.
+Per quanto riguarda i dati categorici:
+* Le colonne come `customer_state` e `seller_state` risultano consistenti (formato a 2 lettere maiuscole).
+* `product_category_name` risulta già normalizzata (minuscolo + underscore, senza caratteri anomali).
+* `order_status` è stato verificato come coerente e senza valori sporchi.
+Per le colonne geografiche:
+* I campi ZIP (`customer_zip_code_prefix`, `seller_zip_code_prefix`, `geolocation_zip_code_prefix`) sono stati mantenuti in formato testo per preservare eventuali zeri iniziali, ma validati tramite regex.
+* Le colonne città (`customer_city`, `seller_city`, `geolocation_city`) presentano inconsistenze (accenti, varianti, presenza di numeri). È stato deciso di NON effettuare una normalizzazione manuale, ma di utilizzare il codice ZIP come riferimento geografico principale nelle analisi.
+Infine:
+* Le colonne di testo libero (es. review_comment_message) sono state escluse dai controlli, in quanto non rilevanti per questo step.ù
+E' stato volutamente evitato l’utilizzo di Python per privilegiare un approccio manuale tramite SQL. Questa scelta è stata fatta per garantire una comprensione diretta e approfondita della struttura del dataset. L’analisi colonna per colonna ha permesso di identificare pattern reali nei dati, anomalie e caratteristiche specifiche (come formati delle date, gestione degli ZIP code, inconsistenze nelle città), portando a decisioni consapevoli sui tipi di dato e sulle strategie di pulizia.
+L’obiettivo non era automatizzare il processo, ma costruire una conoscenza solida del dataset, necessaria per affrontare le fasi successive di analisi. L’automazione tramite Python verrà eventualmente utilizzata negli step successivi, una volta definite chiaramente le regole di validazione.
+Conclusione:
+Lo STEP 3 può considerarsi completato. Tutti i tipi di dato sono coerenti e pronti per analisi, con decisioni consapevoli sui campi non standardizzati.
+
+ENG
+In this phase, a complete data type alignment was performed across all main OLIST dataset tables.
+Specifically:
+* All numerical columns (price, freight_value, payment_value, product dimensions, quantities, etc.) were converted from text to numeric format using `CAST`.
+* All date/time columns (order timestamps, delivery dates, review timestamps) were converted to `timestamp` format after validating their structure using regex and confirming successful casting.
+* Additional checks ensured no invalid date values were present (e.g., months > 12, days > 31), confirming full consistency after conversion.
+Regarding categorical data:
+* Columns such as `customer_state` and `seller_state` were validated and confirmed consistent (standard 2-letter uppercase format).
+* `product_category_name` is already normalized (lowercase with underscores, no anomalous characters).
+* `order_status` was verified as consistent, with no unexpected or malformed values.
+For geographic fields:
+* ZIP code columns (`customer_zip_code_prefix`, `seller_zip_code_prefix`, `geolocation_zip_code_prefix`) were kept as text to preserve leading zeros, but validated via regex.
+* City columns (`customer_city`, `seller_city`, `geolocation_city`) show inconsistencies (accents, variations, numeric values). Instead of manual cleaning, ZIP codes were chosen as the primary geographic reference for analysis due to higher reliability.
+Finally:
+* Free-text fields (e.g., review comments) were excluded from validation, as they are not relevant for this step.
+During STEP 3, Python was intentionally avoided in favor of a manual SQL-based approach. This decision was made to ensure a direct and thorough understanding of the dataset structure. Working column by column allowed the identification of real data patterns, anomalies, and specific characteristics (such as date formats, ZIP code handling, and city inconsistencies), leading to informed decisions on data types and cleaning strategies.
+The goal was not automation, but building a solid understanding of the dataset, which is essential for the following analysis steps. Python-based automation can be applied later, once validation rules are clearly defined.
+Conclusion:
+STEP 3 is completed. All data types are consistent and ready for analysis, with deliberate handling of non-standardized fields.
+During STEP 3, Python was intentionally avoided in favor of a manual SQL-based approach. This decision was made to ensure a direct and thorough understanding of the dataset structure. Working column by column allowed the identification of real data patterns, anomalies, and specific characteristics (such as date formats, ZIP code handling, and city inconsistencies), leading to informed decisions on data types and cleaning strategies.
+The goal was not automation, but building a solid understanding of the dataset, which is essential for the following analysis steps. Python-based automation can be applied later, once validation rules are clearly defined.
+
+☑ Dates are actual dates (not text)
+☑ Numbers are numeric (not strings)
+☑ Categories are consistent (no mixed values)
+COMPLETE - OK
+
+STEP 4 — BASIC DATA QUALITY
+
+ITA:
+Durante lo STEP 4 sono stati eseguiti controlli di qualità base su quattro aree: missing values nelle colonne chiave, duplicati evidenti, valori impossibili e incoerenze temporali/logiche.
+Le colonne chiave (`customer_id`, `order_id`, `product_id`, `seller_id`) non presentano valori NULL, quindi risultano complete per i collegamenti tra tabelle.
+Il controllo sui duplicati ha rilevato righe duplicate solo nella tabella `olist_geolocation_dataset`, con 128.174 gruppi duplicati. L’anomalia è stata segnalata ma non corretta in questa fase.
+Il controllo sui valori impossibili ha rilevato 4 prodotti con `product_weight_g = 0`. Il valore è stato interpretato come peso mancante o non correttamente registrato. Considerando il tema dei tempi di consegna, il peso potrebbe essere utile in analisi logistiche successive, ma l’anomalia riguarda solo 4 record e non sembra sufficiente per spiegare un problema generale.
+Infine, sono state rilevate incoerenze temporali nella tabella ordini: 166 ordini risultano consegnati al corriere prima della data di acquisto e 23 ordini risultano consegnati al cliente prima della consegna al corriere. La maggior parte dei casi sembra compatibile con possibili problemi di fuso orario o sincronizzazione. Nel primo controllo, le anomalie gravi risultano limitate a 2 ordini specifici, con differenze temporali superiori a un giorno.
+Conclusione:
+Lo STEP 4 è stato completato. Le anomalie sono state segnalate e documentate, senza applicare correzioni dirette al dataset.
+
+ENG:
+During STEP 4, basic data quality checks were performed across four areas: missing values in key columns, obvious duplicates, impossible values, and temporal/logical inconsistencies.
+The key columns (`customer_id`, `order_id`, `product_id`, `seller_id`) contain no NULL values, so they are complete for table relationships.
+The duplicate check detected duplicated rows only in the `olist_geolocation_dataset` table, with 128,174 duplicated groups. The issue was flagged but not corrected at this stage.
+The impossible values check detected 4 products with `product_weight_g = 0`. This was interpreted as missing or incorrectly recorded weight information. Since delivery time is a key business concern, product weight may be useful in later logistics analysis, but the issue affects only 4 records and does not appear sufficient to explain a broader delivery problem.
+Finally, temporal inconsistencies were found in the orders table: 166 orders appear to have been delivered to the carrier before the purchase date, and 23 orders appear to have been delivered to the customer before being delivered to the carrier. Most cases may be compatible with timezone or system synchronization issues. In the first check, the severe anomalies are limited to 2 specific orders, with time gaps greater than one day.
+Conclusion:
+STEP 4 was completed. The anomalies were flagged and documented, with no direct corrections applied to the dataset.
+
+☑ Missing values in key columns
+☑ Obvious duplicates
+☑ Impossible values (e.g., negative, unexpected nulls)
+☑ Inconsistent formats (dates, currencies)
+COMPLETE - OK
+
+STEP 5 — LOGICAL CONSISTENCY
+
+ITA:
+Durante lo STEP 5 sono stati controllati la coerenza logica delle date, la ragionevolezza dei valori economici e la relazione tra totale ordine e totale pagamento.
+La coerenza temporale era già stata verificata nello STEP 4: alcune sequenze anomale erano state flaggate, ma senza applicare correzioni.
+I controlli su prezzi, costi di spedizione e pagamenti hanno mostrato valori estremi rispetto alla distribuzione, ma compatibili con il contesto OLIST, cioè un marketplace generalista con categorie prodotto molto diverse. I costi di spedizione più alti risultano collegati a prodotti pesanti o voluminosi, mentre valori di spedizione pari a zero possono essere spiegati da promozioni, spedizione gratuita o costi assorbiti nel prezzo.
+Il confronto tra totale ordine e totale pagamento ha rilevato 1.601 ordini con differenze diverse da zero, di cui 249 con differenza assoluta pari o superiore a 1. Le differenze più rilevanti risultano plausibili nel contesto operativo dei pagamenti, soprattutto per carte di credito, voucher, cashback, sconti o altre logiche gestionali.
+Conclusione:
+Lo STEP 5 è stato completato. Non sono state applicate correzioni. I dati originali sono stati preservati e le differenze rilevate sono state documentate come plausibili nel contesto marketplace.
+
+ENG:
+During STEP 5, logical date consistency, monetary value reasonableness, and the relationship between order totals and payment totals were reviewed.
+Date consistency had already been checked in STEP 4: some anomalous sequences had been flagged, with no corrections applied.
+Checks on item prices, freight values, and payment values showed extreme values compared with the overall distribution, but they were considered compatible with the OLIST context as a general marketplace with diverse product categories. The highest freight values were linked to heavy or bulky products, while zero freight values may be explained by promotions, free shipping, or shipping costs included in the item price.
+The comparison between order totals and payment totals found 1,601 orders with non-zero differences, including 249 orders with an absolute difference equal to or greater than 1. The most relevant differences were considered plausible in the operational payment context, especially for credit cards, vouchers, cashback, discounts, or other business rules.
+Conclusion:
+STEP 5 was completed. No corrections were applied. The original data was preserved, and the detected differences were documented as plausible in the marketplace context.
+
+☑ Dates in correct order (e.g., order ≤ ship)
+☑ Totals are reasonable (no abnormal values)
+☑ Logical relationships respected
+COMPLETE OK
+
+STEP 6 — KPI CHECK (CRITICAL)
+
+ITA
+Durante lo STEP 6 è stata verificata la possibilità di calcolare i KPI necessari per avviare l’analisi. Poiché lo stakeholder non disponeva di KPI già definiti, il problema business di insoddisfazione cliente è stato tradotto in KPI candidati legati a tempi di consegna, ritardi e recensioni.
+Le colonne richieste erano già state validate negli step precedenti. Successivamente è stata costruita una tabella riepilogativa di KPI readiness per verificare la computabilità delle tre aree principali: KPI di consegna, KPI sulle recensioni e KPI di relazione tra consegna e recensioni.
+I KPI di consegna risultano computabili su 96.470 ordini consegnati su 96.478, con solo 8 record non computabili. I KPI sulle recensioni risultano computabili su tutte le 99.224 recensioni. I KPI che collegano consegna e recensioni risultano computabili su 96.353 ordini su 96.361.
+Conclusione:
+Lo STEP 6 è stato completato. Le colonne richieste sono disponibili, i KPI sono computabili e non sono presenti blocchi critici. Il dataset è pronto per l’avvio della fase di analisi.
+
+ENG
+During STEP 6, the computability of the KPIs required to start the analysis was verified. Since the stakeholder did not provide predefined KPIs, the business problem of customer dissatisfaction was translated into candidate KPIs related to delivery times, delays, and customer reviews.
+The required columns had already been validated in the previous steps. A final KPI readiness summary table was then created to verify the computability of the three main areas: delivery KPIs, review KPIs, and delivery-review relationship KPIs.
+Delivery KPIs are computable on 96,470 delivered orders out of 96,478, with only 8 non-computable records. Review KPIs are computable on all 99,224 reviews. Delivery-review relationship KPIs are computable on 96,353 orders out of 96,361.
+Conclusion:
+STEP 6 was completed. The required columns are available, the KPIs are computable, and there are no critical blocking issues. The dataset is ready to start the analysis phase.
+
+☑ Required columns for KPIs exist
+☑ KPIs are computable
+☑ No blocking issues
+* If STEP 6 fails → do not start the analysis
+COMPLETE - OK - The analysis can proceed.
+
+STEP 7 — OUTCOME (DECISION POINT)
+
+ITA
+Durante lo STEP 7 è stata presa la decisione finale sulla possibilità di procedere con lo Scope of Work.
+Gli step precedenti hanno confermato che il dataset è tecnicamente utilizzabile, che le colonne necessarie sono disponibili e che i KPI principali su consegna, recensioni e relazione consegna-recensione sono computabili. Non sono presenti blocchi critici che impediscano l’avvio dell’analisi.
+Tuttavia, lo stakeholder non ha fornito KPI già definiti né una causa certa dell’insoddisfazione cliente. Il problema business resta quindi parzialmente aperto e richiede un’analisi esplorativa guidata dai dati.
+Decisione:
+Si può procedere con lo Scope of Work, ma con limitazioni dichiarate. I risultati saranno basati sulla disponibilità attuale dei dati e potranno essere soggetti a limiti interpretativi.
+
+ENG
+During STEP 7, the final decision was made on whether the project can proceed to the Scope of Work.
+The previous steps confirmed that the dataset is technically usable, the required columns are available, and the main KPIs related to delivery, reviews, and the delivery-review relationship are computable. No critical blocking issues prevent the analysis from starting.
+However, the stakeholder did not provide predefined KPIs or a confirmed root cause for customer dissatisfaction. Therefore, the business problem remains partially open and requires a data-driven exploratory analysis.
+Decision:
+The project can proceed to the Scope of Work, but with declared limitations. The results will be based on current data availability and may be subject to interpretation limits.
+
+☐ OK → you can proceed with SOW
+☑ WARNING → proceed but flag limitations
+☐ BLOCK → cannot proceed → stakeholder alignment needed
+
+
+STAKEHOLDER TO/FROM EMAILS:
+
+Good morning [Name],
+as agreed, I reviewed the available data to understand whether it is possible to start a useful analysis on customer dissatisfaction.
+The initial check is positive: the data allows us to work on deliveries, customer reviews, and the possible connection between delays and negative ratings.
+I am therefore attaching a simple operational proposal with the planned activities, deliverables, and timeline.
+The analysis will be divided into two parts:
+1. a main section, linked to the initial request:
+   * delivery times;
+   * late orders;
+   * customer reviews;
+   * comparison between on-time and late deliveries.
+2. a further investigation section:
+   * product categories;
+   * sellers;
+   * geographic areas;
+   * freight costs;
+   * any other elements that may help us better understand the issue.
+I have also included an interim review, where I will show You the first numerical results before completing the final analysis. This will allow us to confirm whether the direction is correct and adjust the focus if needed.
+One important note: at this stage, the analysis is based on the available data and not on predefined company KPIs. Therefore, the results should be read as a first structured analysis of the problem, useful to understand where to intervene and which aspects may require further investigation.
+If the proposal is acceptable to You, I can proceed with the analysis phase.
+Kind regards,
+[Your Name]
+
+Good morning,
+During the review, I had an additional thought that I would like to share before you proceed.
+From an operational point of view, delivery delays are certainly important, but I am not fully convinced that they are the only factor driving customer dissatisfaction. In particular, I wonder whether we may be missing something related to the **gap between expectation and reality**.
+For example, even when deliveries are on time, customers may still be dissatisfied if:
+* the estimated delivery date is too optimistic;
+* the delivery experience does not match what they expected;
+* or there are issues related to the product itself.
+Would it be possible to slightly adjust the scope by including a comparison between:
+* estimated delivery time vs actual delivery time;
+* and how this gap, not only the delay, relates to review scores?
+I think this could help us understand whether the issue is purely operational, meaning delivery delays, or also related to how customer expectations are managed.
+Please let me know whether this is feasible within the current plan or whether it requires changes.
+Kind regards,
+[Stakeholder Name]
+
+
+Good morning [Name],
+thank you for your feedback.
+Your point is correct and, in my view, it improves the scope of the analysis without changing its overall direction.
+We can include the comparison between estimated delivery time and actual delivery time within the current plan, because the required data is already available in the dataset.
+In particular, in addition to the basic analysis of late deliveries, I will include an additional focus on the gap between expectation and reality by analyzing:
+* estimated delivery time;
+* actual delivery time;
+* the gap between estimated and actual delivery;
+* the relationship between this gap and review scores;
+* the possible change in negative review rate based on this gap.
+This  will help us better understand whether customer dissatisfaction is related only to operational delays or also to how delivery expectations are managed.
+This adjustment is feasible within the current plan and does not currently require a major revision of the timeline. I would include it as an extension of the delivery vs review analysis already planned.
+The note on limitations remains valid: the analysis will be based on the available data and will not include additional internal information such as customer support tickets, complaints, or post-purchase communications.
+I will proceed by updating the Scope of Work in this direction.
+Kind regards,
+[Your Name]
+
+ITA
+Dopo l’invio della proposta operativa, lo stakeholder ha confermato la chiarezza del documento e ha richiesto un’integrazione allo scope: non analizzare solo i ritardi, ma anche il divario tra consegna stimata e consegna effettiva, per capire se l’insoddisfazione dipende anche dalla gestione delle aspettative.
+La richiesta è stata accolta perché compatibile con i dati disponibili e con il piano attuale. Lo scope non viene sostituito, ma esteso: i KPI iniziali restano validi e vengono aggiunti KPI legati all’expectation gap.
+È stata quindi inviata una risposta confermando la fattibilità della modifica e lo Scope of Work è stato aggiornato da V0 a V1.
+In parallelo è stato completato anche il documento “2 - PRE-PROCESSING DATA”, integrando il Data Quality Journal OLIST con le sezioni mancanti richieste dal modello: metadata, contesto, valutazione file e tool, summary table, table profiles, data dictionary, controlli per tabella, limitations, decision flow sugli errori, cleaning status e final preprocessing check.
+Decisione:
+Lo Step 2 è completato. Il progetto dispone ora di un Data Quality / Preprocessing Journal strutturato e coerente con il percorso metodologico.
+
+ENG
+After receiving the operational proposal, the stakeholder confirmed that the document was clear and requested a scope adjustment: not only analyzing delays, but also the gap between estimated and actual delivery, to understand whether dissatisfaction is also related to expectation management.
+The request was accepted because it is supported by the available data and fits the current plan. The scope is not replaced, but extended: the initial KPIs remain valid and additional expectation-gap KPIs are added.
+A response was sent confirming that the adjustment is feasible, and the Scope of Work was updated from V0 to V1.
+In parallel, the “2 - PRE-PROCESSING DATA” document was also completed by integrating the OLIST Data Quality Journal with the missing required sections: metadata, context, file/tool assessment, summary table, table profiles, data dictionary, table-level checks, limitations, data error decision flow, cleaning status, and final preprocessing check.
+Decision:
+Step 2 is completed. The project now has a structured Data Quality / Preprocessing Journal aligned with the methodological workflow.
+
+STEP 3
+ANALYSIS START / DELIVERY DELAY AND REVIEW RELATIONSHIP / POWER BI STAKEHOLDER UPDATE
+
+ITA
+Durante questa fase è stato completato il primo blocco analitico del progetto OLIST nel file 06_step7_analysis_start.sql, dedicato alla relazione tra performance di consegna, gap tra consegna stimata e reale, review score e insoddisfazione cliente.
+Il file è stato strutturato secondo il Documento 3 — Analysis Start, includendo obiettivo analitico, contesto business, definizione KPI, assunzioni, regole di inclusione/esclusione, granularità, logica di join, limiti, query operative, validation check, relationship validation, insight e decisione finale.
+L’obiettivo era verificare se i ritardi di consegna fossero associati a recensioni negative. È stata costruita una base analitica a livello order_id, collegando ordini e recensioni tramite order_id.
+Durante il controllo iniziale è stata corretta la logica di calcolo del ritardo. Il confronto basato su timestamp completo poteva classificare come late ordini consegnati nello stesso giorno della data stimata ma in orario successivo. Per questo motivo il calcolo è stato basato sulla data calendario:
+order_delivered_customer_date::date - order_estimated_delivery_date::date
+Questa correzione ha permesso di distinguere correttamente tra early, on_time e late.
+Il controllo sui delivery status ha mostrato che la maggior parte degli ordini delivered collegati a review valide è arrivata prima della data stimata:
+- early: 88.653 ordini — 92,01%
+- on_time: 1.291 ordini — 1,34%
+- late: 6.409 ordini — 6,65%
+
+Questa evidenza ha corretto una prima interpretazione errata: il problema non è una lentezza generalizzata delle consegne, perché la maggior parte degli ordini arriva prima della data stimata.
+
+Successivamente è stato incrociato il delivery status con review_score e negative_review_rate:
+- early: avg_review_score 4,29 — negative_review_rate 9,23%
+- on_time: avg_review_score 4,03 — negative_review_rate 12,39%
+- late: avg_review_score 2,27 — negative_review_rate 62,41%
+
+Il risultato indica che gli ordini in ritardo sono una minoranza, ma quando il ritardo avviene l’impatto sull’insoddisfazione è molto alto.
+
+È stata poi analizzata la severità del ritardo per bucket:
+- late_1_7_days: 3.612 ordini — avg_review_score 2,71 — negative_review_rate 49,42%
+- late_8_14_days: 1.452 ordini — avg_review_score 1,68 — negative_review_rate 80,03%
+- late_15_21_days: 652 ordini — avg_review_score 1,67 — negative_review_rate 80,83%
+- late_22_30_days: 362 ordini — avg_review_score 1,53 — negative_review_rate 83,15%
+- late_31_60_days: 256 ordini — avg_review_score 1,83 — negative_review_rate 74,22%
+
+La decisione analitica è stata aggiornata: il range operativo finale da considerare è 1–60 giorni. I ritardi 1–7 giorni sono rilevanti per volume, mentre i ritardi 8–60 giorni sono rilevanti per severità.
+È stata testata la categoria prodotto, ma non è stata scelta come direzione principale perché le categorie risultavano varie e la query poteva duplicare righe a causa della relazione con order_items. La categoria prodotto è stata quindi mantenuta solo come controllo esplorativo.
+È stata testata anche la tratta seller ZIP → customer ZIP, ma non è emerso un percorso ricorrente chiaro. Questo ha ridotto la priorità dell’analisi per tratta e ha spostato l’attenzione sull’area di origine della spedizione.
+
+È stata quindi costruita una query sui seller ZIP critici, misurando per ogni seller_zip_code_prefix:
+- totale ordini delivered;
+- ordini in ritardo tra 1 e 60 giorni;
+- incidenza dei ritardi sul totale;
+- ritardo medio;
+- review score medio;
+- numero di recensioni negative;
+- negative review rate.
+
+Sono state definite le seguenti soglie operative:
+- total_delivered_orders >= 10;
+- delayed_orders_rate_percent >= 11%;
+- avg_review_score < 3;
+- negative_review_rate_percent > 50%.
+
+Questa analisi ha evidenziato seller ZIP critici in cui i ritardi tra 1 e 60 giorni hanno una rilevanza operativa e sono associati a review score basso e negative review rate alto.
+È stata poi approfondita la mappatura geografica delle aree seller critiche. Inizialmente è stata testata la tabella olist_geolocation_dataset, ma per l’update intermedio è stato deciso di non creare una relazione geolocation → sellers in Power BI, perché geolocation_zip_code_prefix non è una chiave geografica univoca e avrebbe introdotto una relazione molti-a-molti.
+Per l’interim update è stata quindi scelta la catena corretta:
+orders → order_items → sellers → seller_zip_code_prefix / seller_city / seller_state
+La mappa geografica è stata rimandata a una fase successiva o alla presentazione finale. In Power BI sono stati usati seller_city e seller_state direttamente da olist_sellers_dataset.
+L’analisi ha mostrato una forte concentrazione di aree seller critiche nello stato di São Paulo, con città come São Paulo, Ribeirão Preto, Itatiba, Limeira, Guarulhos e altre aree commerciali/logistiche. Sono presenti anche altri stati, ma São Paulo risulta dominante.
+
+È stata inoltre aggiunta una query sui tempi intermedi del processo ordine:
+- order_purchase_timestamp → order_approved_at;
+- order_approved_at → order_delivered_carrier_date.
+
+Risultati principali:
+
+early:
+- avg_approval_time_days: 0,42
+- avg_approval_to_carrier_days: 2,58
+- avg_delivery_delay_days: -13,71
+- avg_review_score: 4,29
+- negative_review_rate: 9,23%
+
+on_time:
+- avg_approval_time_days: 0,52
+- avg_approval_to_carrier_days: 4,19
+- avg_delivery_delay_days: 0,00
+- avg_review_score: 4,03
+- negative_review_rate: 12,39%
+
+late:
+- avg_approval_time_days: 0,51
+- avg_approval_to_carrier_days: 5,52
+- avg_delivery_delay_days: 10,53
+- avg_review_score: 2,27
+- negative_review_rate: 62,42%
+
+Il tempo ordine → approvazione non sembra spiegare il problema, perché è simile tra early, on_time e late. La differenza più rilevante emerge invece nel tempo approvazione → consegna al corriere, più alto negli ordini late.
+Questa evidenza suggerisce che parte del ritardo possa iniziare nella fase pre-corriere: preparazione ordine, gestione magazzino, processo seller, disponibilità stock, pickup scheduling o handoff al corriere. Non è una prova causale, perché il dataset non contiene order priority, queue management, capacità magazzino, disponibilità merce, carrier assignment o logiche operative interne.
+Per rendere gli output riutilizzabili è stato creato un nuovo script SQL:
+
+07_step8_power_bi_reusable_outputs.sql
+
+Sono state create e validate quattro SQL view per Power BI:
+- pbi_01_delivery_status_review
+- pbi_02_delay_bucket_review
+- pbi_03_critical_seller_zip_review
+- pbi_04_approval_carrier_timing
+
+Ogni view è stata esportata anche in CSV nella cartella dedicata allo stakeholder update. La scelta finale è stata mantenere sia SQL view sia CSV:
+- SQL view = fonte stabile e riutilizzabile;
+- CSV = output rapido per Power BI e PDF interim.
+
+In Power BI è stato costruito un mini-report esportabile in PDF, non una dashboard finale. Sono state importate le quattro tabelle CSV e controllati i tipi dati in Power Query, correggendo dove necessario i formati numerici e decimali.
+È stato creato un report con sei pagine:
+1. Cover
+2. Delivery Status vs Negative Review Rate
+3. Delay Buckets
+4. Critical Seller Areas
+5. Approval-to-Carrier Timing
+6. Data Needed
+
+Pagina 1 — Cover:
+È stata creata una pagina introduttiva con titolo, sottotitolo, obiettivo, scope, metodo, dataset, tool usati e stato dell’analisi.
+Pagina 2 — Delivery Status:
+È stato creato un grafico a barre orizzontali con negative_review_rate_percent per delivery_status. Il messaggio principale è che i late deliveries sono una piccola quota degli ordini, ma hanno un impatto molto alto sull’insoddisfazione. È stato aggiunto insight testuale con riferimento a 6,65% di late orders e 62,41% di negative review rate.
+Pagina 3 — Delay Buckets:
+È stato creato un grafico a barre orizzontali con negative_review_rate_percent per delay bucket. È stata aggiunta una label personalizzata con bucket e numero ordini, così il PDF mostra sia severità sia volume. Il messaggio principale è che il bucket 1–7 giorni ha volume maggiore, mentre i bucket più lunghi mostrano maggiore severità.
+Pagina 4 — Critical Seller Areas:
+È stato creato un grafico Top 15 delle città seller critiche, usando una label città + stato. È stata aggiunta una legenda degli stati e un insight macro che collega la vista città alla concentrazione nello stato di São Paulo. La pagina mostra insieme una vista micro sulle città e una vista macro sulla concentrazione per stato.
+Pagina 5 — Approval-to-Carrier Timing:
+È stato creato un grafico a barre con avg_approval_to_carrier_days per delivery_status. Il messaggio principale è che gli ordini late mostrano il tempo medio più alto tra approvazione ordine e consegna al corriere, pari a 5,52 giorni.
+Pagina 6 — Data Needed:
+È stata creata una pagina finale con dati operativi necessari, domande business per lo stakeholder e decisione finale. Le domande sono state ridotte e rese coerenti con ciò che il dataset non permette di sapere.
+
+Dati operativi richiesti:
+- seller/store mapping per ZIP e città critiche;
+- cluster operativo, hub, area manager, partner logistico o canale di vendita;
+- corriere usato per ordine o area seller;
+- pickup date, dispatch date e carrier handoff date;
+- tempi di preparazione seller o magazzino;
+- stock availability, backlog, capacità seller, staffing e workload.
+
+Domande business finali:
+1. Quale seller_id/store è collegato a ciascun seller ZIP o città critica, e che tipo di sede è: store, magazzino, hub, partner marketplace o canale online?
+2. I seller/store critici fanno parte di cluster operativi interni per area, hub, manager, partner logistico o canale di vendita?
+3. Quali corrieri sono stati usati per gli ordini provenienti dalle aree seller critiche, e alcune aree dipendono da un solo corriere o da pochi corrieri ricorrenti?
+4. Quali vincoli operativi o business hanno interessato le aree seller critiche: personale, volume ordini, tempo di preparazione, limiti di magazzino, picchi di lavoro, backlog, problemi di stock o problemi logistici noti?
+Decisione analitica aggiornata:
+Il problema non è una lentezza generalizzata delle consegne. Il pattern più solido riguarda un sottoinsieme di ordini late, fortemente associato a recensioni negative, concentrato in specifiche aree seller, soprattutto nello stato di São Paulo. Il tempo approval-to-carrier più alto negli ordini late suggerisce un possibile problema nella fase pre-corriere.
+Limite:
+Il dataset attuale consente di identificare associazioni forti, ma non consente di confermare la root cause operativa. Per passare alla root-cause analysis servono dati logistici, organizzativi e operativi aggiuntivi dallo stakeholder.
+
+ENG
+During this phase, the first analytical block of the OLIST project was completed in the file 06_step7_analysis_start.sql. This block focused on the relationship between delivery performance, the gap between estimated and actual delivery dates, review score, and customer dissatisfaction.
+The file was structured according to Document 3 — Analysis Start, including analytical objective, business context, KPI definition, assumptions, inclusion/exclusion rules, granularity, join logic, limitations, operational queries, validation check, relationship validation, insights, and final decision.
+The objective was to verify whether delivery delays were associated with negative reviews. An order-level analytical base was created by joining orders and reviews through order_id.
+During the initial check, the delay calculation logic was corrected. The comparison based on full timestamps could classify as late some orders delivered on the same calendar day as the estimated delivery date but at a later time. For this reason, the calculation was based on calendar dates:
+order_delivered_customer_date::date - order_estimated_delivery_date::date
+This correction made it possible to correctly distinguish between early, on_time, and late deliveries.
+
+The delivery status check showed that most delivered orders linked to valid reviews arrived before the estimated delivery date:
+- early: 88,653 orders — 92.01%
+- on_time: 1,291 orders — 1.34%
+- late: 6,409 orders — 6.65%
+
+This evidence corrected an initial misinterpretation: the problem is not a generalized delivery slowness issue, because most orders arrive before the estimated delivery date.
+
+Delivery status was then compared with review_score and negative_review_rate:
+- early: avg_review_score 4.29 — negative_review_rate 9.23%
+- on_time: avg_review_score 4.03 — negative_review_rate 12.39%
+- late: avg_review_score 2.27 — negative_review_rate 62.41%
+
+The result shows that late orders are a minority, but when a delay occurs, the impact on dissatisfaction is very high.
+
+Delay severity was then analyzed by bucket:
+- late_1_7_days: 3,612 orders — avg_review_score 2.71 — negative_review_rate 49.42%
+- late_8_14_days: 1,452 orders — avg_review_score 1.68 — negative_review_rate 80.03%
+- late_15_21_days: 652 orders — avg_review_score 1.67 — negative_review_rate 80.83%
+- late_22_30_days: 362 orders — avg_review_score 1.53 — negative_review_rate 83.15%
+- late_31_60_days: 256 orders — avg_review_score 1.83 — negative_review_rate 74.22%
+
+The analytical decision was updated: the final operational range to consider is 1–60 days. Delays of 1–7 days are relevant because of volume, while delays of 8–60 days are relevant because of severity.
+Product category was tested, but it was not selected as the main analytical direction because categories were varied and the query could duplicate rows due to the relationship with order_items. Product category was therefore kept only as an exploratory check.
+The seller ZIP → customer ZIP route was also tested, but no clear recurring route emerged. This reduced the priority of route-level analysis and shifted the focus to the shipment origin area.
+
+A query was then built to identify critical seller ZIPs, measuring for each seller_zip_code_prefix:
+- total delivered orders;
+- orders delayed between 1 and 60 days;
+- delay incidence over total orders;
+- average delay;
+- average review score;
+- number of negative reviews;
+- negative review rate.
+
+The following operational thresholds were defined:
+- total_delivered_orders >= 10;
+- delayed_orders_rate_percent >= 11%;
+- avg_review_score < 3;
+- negative_review_rate_percent > 50%.
+
+This analysis identified critical seller ZIPs where delays between 1 and 60 days have operational relevance and are associated with low review scores and high negative review rates.
+The geographic mapping of critical seller areas was then explored. Initially, the olist_geolocation_dataset table was tested, but for the interim update it was decided not to create a geolocation → sellers relationship in Power BI, because geolocation_zip_code_prefix is not a unique geographic key and would introduce a many-to-many relationship.
+For the interim update, the correct chain was therefore selected:
+orders → order_items → sellers → seller_zip_code_prefix / seller_city / seller_state
+The geographic map was postponed to a later phase or final presentation. In Power BI, seller_city and seller_state were used directly from olist_sellers_dataset.
+The analysis showed a strong concentration of critical seller areas in the state of São Paulo, with cities such as São Paulo, Ribeirão Preto, Itatiba, Limeira, Guarulhos, and other commercial/logistics areas. Other states are also present, but São Paulo is dominant.
+A query on intermediate order process times was also added:
+- order_purchase_timestamp → order_approved_at;
+- order_approved_at → order_delivered_carrier_date.
+
+Main results:
+early:
+- avg_approval_time_days: 0.42
+- avg_approval_to_carrier_days: 2.58
+- avg_delivery_delay_days: -13.71
+- avg_review_score: 4.29
+- negative_review_rate: 9.23%
+
+on_time:
+- avg_approval_time_days: 0.52
+- avg_approval_to_carrier_days: 4.19
+- avg_delivery_delay_days: 0.00
+- avg_review_score: 4.03
+- negative_review_rate: 12.39%
+
+late:
+- avg_approval_time_days: 0.51
+- avg_approval_to_carrier_days: 5.52
+- avg_delivery_delay_days: 10.53
+- avg_review_score: 2.27
+- negative_review_rate: 62.42%
+
+The time from order purchase to approval does not appear to explain the issue, because it is similar across early, on_time, and late deliveries. The most relevant difference appears instead in the time from approval to carrier handoff, which is higher for late orders.
+This evidence suggests that part of the delay may start in the pre-carrier phase: order preparation, warehouse handling, seller process, stock availability, pickup scheduling, or carrier handoff. This is not causal proof, because the dataset does not contain order priority, queue management, warehouse capacity, stock availability, carrier assignment, or internal operational logic.
+To make the outputs reusable, a new SQL script was created:
+
+07_step8_power_bi_reusable_outputs.sql
+
+Four SQL views were created and validated for Power BI:
+- pbi_01_delivery_status_review
+- pbi_02_delay_bucket_review
+- pbi_03_critical_seller_zip_review
+- pbi_04_approval_carrier_timing
+
+Each view was also exported to CSV in the dedicated stakeholder update folder. The final decision was to keep both SQL views and CSV files:
+- SQL view = stable and reusable source;
+- CSV = quick output for Power BI and interim PDF.
+
+In Power BI, a mini-report exportable to PDF was built, not a final dashboard. The four CSV tables were imported and data types were checked in Power Query, correcting numeric and decimal formats where necessary.
+
+A six-page report was created:
+1. Cover
+2. Delivery Status vs Negative Review Rate
+3. Delay Buckets
+4. Critical Seller Areas
+5. Approval-to-Carrier Timing
+6. Data Needed
+
+Page 1 — Cover:
+An introductory page was created with title, subtitle, objective, scope, method, dataset, tools used, and analysis status.
+Page 2 — Delivery Status:
+A horizontal bar chart was created with negative_review_rate_percent by delivery_status. The main message is that late deliveries represent a small share of orders, but they have a very high impact on customer dissatisfaction. A text insight was added, referring to 6.65% late orders and 62.41% negative review rate.
+Page 3 — Delay Buckets:
+A horizontal bar chart was created with negative_review_rate_percent by delay bucket. A custom label was added with bucket and order count, so the PDF shows both severity and volume. The main message is that the 1–7 day bucket has the highest volume, while longer buckets show higher severity.
+Page 4 — Critical Seller Areas:
+A Top 15 chart of critical seller cities was created, using a city + state label. A state legend was added, along with a macro-level insight connecting the city view to the concentration in São Paulo state. The page shows both a micro view on cities and a macro view on state concentration.
+Page 5 — Approval-to-Carrier Timing:
+A bar chart was created with avg_approval_to_carrier_days by delivery_status. The main message is that late orders show the highest average time between order approval and carrier handoff, equal to 5.52 days.
+Page 6 — Data Needed:
+A final page was created with the required operational data, business questions for the stakeholder, and final decision. The questions were reduced and aligned with what the current dataset cannot explain.
+
+Required operational data:
+- seller/store mapping for critical ZIPs and cities;
+- operational cluster, hub, area manager, logistics partner, or sales channel;
+- carrier used by order or seller area;
+- pickup date, dispatch date, and carrier handoff date;
+- seller or warehouse preparation time;
+- stock availability, backlog, seller capacity, staffing, and workload.
+
+Final business questions:
+1. Which seller_id/store is linked to each critical seller ZIP or city, and what type of location is it: store, warehouse, hub, marketplace partner, or online channel?
+2. Are the critical sellers/stores part of internal operational clusters by area, hub, manager, logistics partner, or sales channel?
+3. Which carriers were used for orders from the critical seller areas, and are some areas dependent on one carrier or few recurring carriers?
+4. What capacity or business constraints affected the critical seller areas: staff, order volume, preparation time, warehouse limits, workload peaks, backlog, stock issues, or known logistics problems?
+
+Updated analytical decision:
+The issue is not generalized delivery slowness. The strongest pattern concerns a subset of late orders, strongly associated with negative reviews, concentrated in specific seller areas, especially in the state of São Paulo. The higher approval-to-carrier time for late orders suggests a possible issue in the pre-carrier phase.
+
+Limitation:
+The current dataset allows strong associations to be identified, but it does not allow the operational root cause to be confirmed. To move to root-cause analysis, additional logistics, organizational, and operational data are required from the stakeholder.
+
+Status:
+ANALYSIS BLOCK COMPLETED - POWER BI INTERIM STAKEHOLDER UPDATE COMPLETED - READY FOR STAKEHOLDER REVIEW
+
+ITA
+CRONACA INCONTRO – ANALISTA ↔ STAKEHOLDER
+Stakeholder:
+Ho letto il report. Mi sembra che i ritardi siano pochi ma con un impatto molto forte sulle recensioni negative. È corretto?
+
+Analista:
+Sì, è corretto. I ritardi rappresentano circa il 6–7% degli ordini consegnati con review valida, ma mostrano un negative review rate superiore al 60%. Questo indica che il problema non è diffuso, ma ha un impatto significativo quando si verifica.
+
+Stakeholder:
+Se i ritardi sono così pochi, vale davvero la pena concentrarsi su questo problema?
+
+Analista:
+Sì, perché il loro impatto sulla soddisfazione cliente è sproporzionato rispetto al volume. Anche una riduzione parziale dei ritardi potrebbe avere un effetto rilevante sulle recensioni negative.
+
+Stakeholder:
+La soddisfazione dipende solo dal ritardo o anche dalla differenza tra promessa e realtà?
+
+Analista:
+Dai dati emerge una forte associazione tra ritardo e recensioni negative, anche per ritardi brevi (1–7 giorni). Questo suggerisce che il mancato rispetto della data stimata è un fattore critico. Tuttavia, l’analisi dell’expectation gap non è ancora completa e rappresenta il prossimo passo per distinguere meglio tra ritardo assoluto e scostamento rispetto all’aspettativa.
+
+Stakeholder:
+Il problema nasce durante la spedizione o prima?
+
+Analista:
+I dati suggeriscono che una parte del ritardo possa iniziare prima della consegna finale. In particolare, gli ordini in ritardo mostrano un tempo medio più alto tra approvazione dell’ordine e consegna al corriere. Questo indica una possibile inefficienza nella fase di preparazione o handoff, ma non possiamo ancora confermarlo come causa.
+
+Stakeholder:
+Perché São Paulo emerge così tanto? È un problema reale o solo volume?
+
+Analista:
+Al momento non possiamo ancora distinguerlo con certezza. I dati mostrano una concentrazione di ordini in ritardo nell’area, ma manca una comparazione diretta con il resto del dataset per capire se si tratta di un effetto volume o di una performance peggiore.
+
+Stakeholder:
+Dove dovremmo intervenire adesso?
+
+Analista:
+In questa fase non è ancora possibile definire un intervento operativo mirato. L’area di São Paulo è prioritaria per approfondimenti, ma è necessario prima distinguere tra volume e performance e completare l’analisi sull’expectation gap.
+
+Durante l’incontro è stato confermato che:
+
+I ritardi di consegna rappresentano una quota limitata degli ordini, ma sono fortemente associati a recensioni negative.
+Esiste un segnale operativo nella fase approval → carrier, che potrebbe contribuire ai ritardi.
+È stata identificata una concentrazione geografica nell’area di São Paulo, ma non è ancora chiaro se si tratti di un problema di volume o di performance.
+L’analisi attuale identifica associazioni rilevanti, ma non consente ancora di determinare una root cause.
+
+Prossimi step concordati:
+Confronto diretto tra São Paulo e resto del dataset su:
+volume ordini
+late delivery rate
+negative review rate
+tempo approval-to-carrier
+Completamento dell’analisi expectation gap vs review score
+
+ENG
+MEETING LOG – ANALYST ↔ STAKEHOLDER
+
+Stakeholder:
+I reviewed the report. It seems that delays are relatively low in volume but have a very strong impact on negative reviews. Is that correct?
+
+Analyst:
+Yes, that is correct. Delayed deliveries represent approximately 6–7% of delivered orders with valid reviews, but they show a negative review rate above 60%. This indicates that the issue is not widespread, but it has a significant impact when it occurs.
+
+Stakeholder:
+If delays are so limited, is it really worth focusing on this issue?
+
+Analyst:
+Yes, because their impact on customer satisfaction is disproportionate to their volume. Even a partial reduction in delays could have a meaningful effect on negative reviews.
+
+Stakeholder:
+Does customer satisfaction depend only on delays, or also on the gap between expectation and reality?
+
+Analyst:
+The data shows a strong association between delivery delays and negative reviews, even for short delays (1–7 days). This suggests that failing to meet the estimated delivery date is a critical factor. However, the expectation gap analysis is not yet complete and represents the next step to better distinguish between absolute delay and deviation from customer expectations.
+
+Stakeholder:
+Does the issue originate during delivery or before?
+
+Analyst:
+The data suggests that part of the delay may begin before the final delivery stage. In particular, delayed orders show a higher average time between order approval and handoff to the carrier. This indicates a potential inefficiency in the preparation or handoff phase, but we cannot yet confirm it as the root cause.
+
+Stakeholder:
+Why does São Paulo stand out so much? Is it a real issue or just volume?
+
+Analyst:
+At this stage, we cannot clearly distinguish this. The data shows a concentration of delayed orders in the area, but a direct comparison with the rest of the dataset is still needed to determine whether this is a volume effect or a performance issue.
+
+Stakeholder:
+Where should we take action now?
+
+Analyst:
+At this stage, it is not yet possible to define a targeted operational action. The São Paulo area is a priority for further investigation, but we first need to distinguish between volume and performance and complete the expectation gap analysis.
+
+Meeting Conclusion
+
+During the meeting, it was confirmed that:
+
+Delivery delays represent a limited share of orders but are strongly associated with negative reviews.
+There is an operational signal in the approval → carrier phase that may contribute to delays.
+A geographic concentration has been identified in the São Paulo area, but it is not yet clear whether this is driven by volume or performance.
+The current analysis identifies strong associations but does not yet establish a confirmed root cause.
+Agreed Next Steps
+Perform a direct comparison between São Paulo and the rest of the dataset on:
+order volume
+late delivery rate
+negative review rate
+approval-to-carrier time
+Complete the expectation gap vs review score analysis
+
+INTERIM REVIEW COMPLETED — ANALYSIS CONTINUES
+
+ITA
+AGGIORNAMENTO POST-STAKEHOLDER REVIEW
+Dopo la review intermedia con lo stakeholder, è stato confermato che l’analisi attuale è utile e che i ritardi di consegna, pur essendo limitati in termini di volume, mostrano una forte associazione con le recensioni negative.
+Durante il confronto sono emerse due domande analitiche:
+1. Se la concentrazione nello stato di São Paulo rappresenti un reale problema di performance oppure principalmente un effetto volume.
+2. Se l’insoddisfazione cliente sia guidata dal ritardo assoluto oppure dal gap tra consegna stimata e consegna reale.
+
+L’analisi attuale è stata quindi considerata sufficiente per la review intermedia, ma non ancora sufficiente per confermare la root cause o definire un intervento operativo mirato.
+Prossimi step analitici:
+- confrontare le aree seller di São Paulo con il resto del dataset su volume ordini, late delivery rate, negative review rate e approval-to-carrier timing;
+- completare l’analisi expectation gap rispetto a review score e negative review rate.
+
+Decisione:
+procedere con una post-stakeholder follow-up analysis prima di proporre raccomandazioni operative.
+
+ENG
+POST-STAKEHOLDER REVIEW UPDATE
+After the interim stakeholder review, the stakeholder confirmed that the current analysis is useful and that late deliveries, although limited in volume, show a strong association with negative customer reviews.
+Two analytical questions were raised during the discussion:
+1. Whether the São Paulo concentration represents a true performance issue or mainly a volume effect.
+2. Whether customer dissatisfaction is driven by absolute delay or by the gap between expected and actual delivery.
+
+The current analysis was therefore considered sufficient for the interim review, but not sufficient to confirm root cause or define a targeted operational intervention.
+Next analytical steps:
+- compare São Paulo seller areas against the rest of the dataset on order volume, late delivery rate, negative review rate, and approval-to-carrier timing;
+- complete the expectation gap analysis against review score and negative review rate.
+
+Decision:
+Proceed with a post-stakeholder follow-up analysis before proposing operational recommendations.
+
+AGGIORNAMENTO GENERAL JOURNAL — POST-STAKEHOLDER FOLLOW-UP
+
+ITA
+Dopo la review intermedia con lo stakeholder, il report Power BI è stato considerato utile per confermare che i ritardi di consegna sono una minoranza degli ordini, ma sono fortemente associati a recensioni negative.
+
+Durante l’incontro sono emerse due nuove domande analitiche:
+
+1. capire se la concentrazione nello stato di São Paulo rappresenta un reale problema di performance oppure principalmente un effetto volume;
+2. completare l’analisi sul delivery expectation gap per capire se l’insoddisfazione cliente dipende dal ritardo assoluto oppure dallo scostamento tra consegna stimata e consegna reale.
+
+Per recepire il feedback, lo Scope of Work è stato aggiornato alla versione V2. La nuova versione include una fase di post-stakeholder follow-up analysis, con focus su:
+- confronto São Paulo vs resto del dataset;
+- completamento dell’analisi expectation gap vs review score;
+- revisione dei milestone e dei deliverable collegati al follow-up.
+
+È stato creato un nuovo file SQL:
+
+08_step9_post_stakeholder_followup.sql
+
+Nel file è stata prima eseguita una query di confronto tra São Paulo seller areas e resto del dataset.
+
+Risultati principali:
+
+- rest_of_dataset: 28.080 ordini delivered — late_delivery_rate 5,24% — avg_review_score 4,21 — negative_review_rate 11,73% — avg_approval_to_carrier_days 2,78
+- sao_paulo: 68.155 ordini delivered — late_delivery_rate 7,21% — avg_review_score 4,12 — negative_review_rate 13,54% — avg_approval_to_carrier_days 2,79
+
+Interpretazione:
+São Paulo emerge soprattutto per volume, perché ha un numero di ordini molto più alto rispetto al resto del dataset. Tuttavia, mostra anche una late delivery rate e una negative review rate leggermente superiori. A livello aggregato, invece, il tempo medio approval-to-carrier è quasi identico al resto del dataset, quindi non spiega da solo la differenza macro.
+
+È stata poi preparata una lista di aree seller candidate dentro São Paulo, usando:
+- seller_zip_code_prefix;
+- seller_city;
+- total_delivered_orders;
+- late_delivery_rate_percent;
+- avg_review_score;
+- negative_review_rate_percent;
+- avg_approval_to_carrier_days.
+
+Prima dell’aggregazione finale è stato eseguito un controllo sui nomi città, perché il campo seller_city contiene alcune varianti ortografiche. È stata applicata solo una normalizzazione analitica controllata, senza modificare i dati sorgente.
+
+Normalizzazioni applicate:
+- sao paluo / sao paulo - sp / sao paulo sp / sao paulop / sp / sp / sp-style values → sao paulo
+- riberao preto → ribeirao preto
+- portoferreira → porto ferreira
+- santa barbara d´oeste / santa barbara d oeste → santa barbara d'oeste
+
+La query finale ha prodotto una tabella di candidate seller-origin ZIP/city areas nello stato di São Paulo, filtrando aree con:
+- almeno 100 ordini delivered;
+- avg_approval_to_carrier_days superiore alla media dello stato di São Paulo.
+
+Questa tabella non identifica store o magazzini reali. Identifica aree ZIP/città candidate per approfondimento geografico.
+
+Successivamente è stata aggiunta una query per associare coordinate approssimate alle aree candidate. Le coordinate sono state derivate dalla tabella olist_geolocation_dataset usando la mediana di latitudine e longitudine per geolocation_zip_code_prefix.
+
+Decisione metodologica:
+le coordinate sono da considerare approximate ZIP-prefix coordinates, non coordinate esatte di seller, store, magazzini, hub o partner marketplace.
+
+Sono stati esportati due output CSV:
+
+1. sp_vs_rest_dataset_performance_v01.csv
+   - output per confrontare São Paulo vs resto del dataset;
+   - utile per mostrare il ruolo del volume e le differenze di performance.
+
+2. sp_seller_zip_city_candidates_with_coordinates_v01.csv
+   - output per costruire in Power BI una mappa esplorativa delle aree seller candidate dentro São Paulo;
+   - include ZIP prefix, città normalizzata, KPI principali e coordinate approssimate.
+
+Decisione finale della fase:
+la parte SQL del post-stakeholder follow-up è stata completata per il blocco São Paulo/geographic follow-up. I due output esportati saranno usati in Power BI per creare le grafiche finali:
+- confronto São Paulo vs resto del dataset;
+- distribuzione geografica approssimata delle aree seller ZIP/city candidate.
+
+Limite:
+la mappa geografica non deve essere presentata come localizzazione esatta di store o hub. Deve essere descritta come una visualizzazione approssimata basata su ZIP prefix, utile per esplorare la distribuzione geografica delle aree candidate.
+
+ENG
+GENERAL JOURNAL UPDATE — POST-STAKEHOLDER FOLLOW-UP
+
+After the interim stakeholder review, the Power BI report was considered useful to confirm that delivery delays represent a minority of orders, but are strongly associated with negative reviews.
+
+During the meeting, two new analytical questions emerged:
+
+1. understand whether the concentration in São Paulo state represents a real performance issue or mainly a volume effect;
+2. complete the delivery expectation gap analysis to understand whether customer dissatisfaction depends on absolute delay or on the difference between estimated and actual delivery.
+
+To incorporate the feedback, the Scope of Work was updated to version V2. The new version includes a post-stakeholder follow-up analysis phase, focused on:
+- São Paulo vs rest-of-dataset comparison;
+- completion of expectation gap vs review score analysis;
+- revision of milestones and deliverables related to the follow-up.
+
+A new SQL file was created:
+
+08_step9_post_stakeholder_followup.sql
+
+The first query in the file compared São Paulo seller areas against the rest of the dataset.
+
+Main results:
+
+- rest_of_dataset: 28,080 delivered orders — late_delivery_rate 5.24% — avg_review_score 4.21 — negative_review_rate 11.73% — avg_approval_to_carrier_days 2.78
+- sao_paulo: 68,155 delivered orders — late_delivery_rate 7.21% — avg_review_score 4.12 — negative_review_rate 13.54% — avg_approval_to_carrier_days 2.79
+
+Interpretation:
+São Paulo mainly emerges because of volume, since it has a much higher number of orders than the rest of the dataset. However, it also shows a slightly higher late delivery rate and negative review rate. At aggregate level, the average approval-to-carrier time is almost identical to the rest of the dataset, so it does not explain the macro difference by itself.
+
+A list of candidate seller areas inside São Paulo was then prepared, using:
+- seller_zip_code_prefix;
+- seller_city;
+- total_delivered_orders;
+- late_delivery_rate_percent;
+- avg_review_score;
+- negative_review_rate_percent;
+- avg_approval_to_carrier_days.
+
+Before the final aggregation, a city-name check was performed because the seller_city field contains some spelling variants. Only controlled analytical normalization was applied, without modifying the source data.
+
+Applied normalizations:
+- sao paluo / sao paulo - sp / sao paulo sp / sao paulop / sp / sp / sp-style values → sao paulo
+- riberao preto → ribeirao preto
+- portoferreira → porto ferreira
+- santa barbara d´oeste / santa barbara d oeste → santa barbara d'oeste
+
+The final query produced a table of candidate seller-origin ZIP/city areas in São Paulo state, filtering areas with:
+- at least 100 delivered orders;
+- avg_approval_to_carrier_days above the São Paulo state average.
+
+This table does not identify real stores or warehouses. It identifies ZIP/city candidate areas for geographic follow-up.
+
+A further query was then added to assign approximate coordinates to the candidate areas. The coordinates were derived from the olist_geolocation_dataset table using the median latitude and longitude by geolocation_zip_code_prefix.
+
+Methodological decision:
+the coordinates must be treated as approximate ZIP-prefix coordinates, not exact coordinates of sellers, stores, warehouses, hubs, or marketplace partners.
+
+Two CSV outputs were exported:
+
+1. sp_vs_rest_dataset_performance_v01.csv
+   - output used to compare São Paulo against the rest of the dataset;
+   - useful to show the role of volume and the performance differences.
+
+2. sp_seller_zip_city_candidates_with_coordinates_v01.csv
+   - output used to build an exploratory map of candidate seller areas inside São Paulo in Power BI;
+   - includes ZIP prefix, normalized city, main KPIs, and approximate coordinates.
+
+Final decision for this phase:
+the SQL part of the post-stakeholder follow-up was completed for the São Paulo/geographic follow-up block. The two exported outputs will be used in Power BI to create the final visuals:
+- São Paulo vs rest-of-dataset comparison;
+- approximate geographic distribution of candidate seller ZIP/city areas.
+
+Limitation:
+the geographic map must not be presented as an exact location of stores or hubs. It must be described as an approximate ZIP-prefix-based visualization, useful to explore the geographic distribution of candidate areas.
+
+Status:
+POST-STAKEHOLDER FOLLOW-UP SQL BLOCK COMPLETED FOR SÃO PAULO / GEOGRAPHIC ANALYSIS
+
+AUDIENCE CLARIFICATION FOR FINAL PRESENTATION
+
+ITA
+Prima della preparazione della presentazione finale è stata inviata una richiesta di chiarimento allo stakeholder per definire meglio l’audience della final review e il livello di dettaglio atteso.
+A seguire lo scambio di e-mail:
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Buongiorno,
+
+a seguito dell’ultimo aggiornamento sul progetto, vorrei confermare un punto relativo alla presentazione finale.
+
+Potrebbe indicarmi chi farà parte del pubblico durante la revisione finale? In particolare, mi sarebbe utile comprendere:
+
+quali team o ruoli parteciperanno (ad esempio operations, logistica, customer experience),
+se il pubblico sarà principalmente operativo o includerà anche figure a livello manageriale,
+il livello di dettaglio atteso per la presentazione.
+
+Queste informazioni mi aiuteranno ad adattare la presentazione, focalizzandomi sugli insight più rilevanti e assicurando una comunicazione efficace dei risultati.
+
+Grazie in anticipo per il supporto.
+
+Cordiali saluti,
+Manuel Marrocco
+Data Analyst
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Buongiorno Manuel,
+
+grazie per il messaggio.
+
+La presentazione finale coinvolgerà un pubblico misto, con un focus principalmente sui team operativi.
+
+Parteciperanno:
+
+Operations Management (responsabili delle performance di consegna)
+team logistica e fulfillment
+team Customer Experience (gestione recensioni e reclami)
+
+È possibile che partecipi anche un gruppo ristretto di figure manageriali per valutare i principali risultati e le possibili implicazioni.
+
+Ti consigliamo di mantenere la presentazione focalizzata sugli insight operativi principali, evidenziando dove emergono criticità e quali aree potrebbero richiedere ulteriori approfondimenti.
+
+Il livello di dettaglio dovrebbe essere accessibile, evitando spiegazioni troppo tecniche, ma supportando comunque le conclusioni con dati chiari.
+
+Rimaniamo a disposizione per eventuali ulteriori chiarimenti.
+
+Cordiali saluti,
+Olist Operations Team
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Richiesta inviata:
+è stato chiesto chi avrebbe partecipato alla final presentation, con particolare attenzione a:
+- team o ruoli presenti;
+- presenza di stakeholder operativi o manageriali;
+- livello di dettaglio atteso per la presentazione.
+
+Risposta stakeholder:
+lo stakeholder ha confermato che la presentazione finale avrà un’audience mista, principalmente focalizzata sui team operativi.
+
+Partecipanti attesi:
+- Operations Management, con focus su delivery performance oversight;
+- Logistics and Fulfillment teams;
+- Customer Experience team, con focus su review e complaint management;
+- un gruppo più ristretto di management stakeholders per valutare key findings e potenziali implicazioni.
+
+Implicazione per la delivery:
+la presentazione finale deve restare focalizzata sugli insight operativi principali, evidenziando:
+- dove emergono i problemi di performance;
+- quali aree richiedono ulteriore investigazione;
+- quali conclusioni sono supportate dai dati;
+- quali limiti impediscono di dichiarare una root cause definitiva.
+
+Decisione di comunicazione:
+la presentazione dovrà essere:
+- operational-first;
+- comprensibile anche per management stakeholders;
+- non eccessivamente tecnica;
+- supportata da visual chiari;
+- focalizzata su insight, implicazioni e prossimi step;
+- esplicita sui limiti metodologici, soprattutto sulle coordinate approssimate ZIP-prefix e sull’assenza di dati operativi dettagliati.
+
+ENG
+Before preparing the final presentation, a clarification request was sent to the stakeholder to better define the audience for the final review and the expected level of detail.
+The email exchange is reported below:
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Good morning,
+
+Following the latest project update, I would like to confirm one point regarding the final presentation.
+
+Could you please clarify who will be part of the audience for the final review? In particular, it would be helpful to understand:
+
+which teams or roles will attend (for example operations, logistics, customer experience),
+whether the audience will be mainly operational or include management-level stakeholders,
+the expected level of detail for the presentation.
+
+This information will help me adapt the presentation, focusing on the most relevant insights and ensuring effective communication of the results.
+
+Thank you in advance for your support.
+
+Kind regards,
+Manuel Marrocco
+Data Analyst
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Good morning Manuel,
+
+thank you for your message.
+
+The final presentation will involve a mixed audience, primarily focused on operational teams.
+
+Participants will include:
+
+Operations Management (delivery performance oversight)
+Logistics and Fulfillment teams
+Customer Experience team (review and complaint management)
+
+A smaller group of management stakeholders may also attend to review the key findings and potential implications.
+
+We recommend keeping the presentation focused on the main operational insights, highlighting where issues emerge and which areas may require further investigation.
+
+The level of detail should remain accessible, avoiding overly technical explanations while still supporting the conclusions with clear data.
+
+Please let us know if you need any further clarification.
+
+Kind regards,
+Olist Operations Team
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Request sent:
+the stakeholder was asked who would attend the final presentation, with particular attention to:
+- teams or roles involved;
+- presence of operational or management-level stakeholders;
+- expected level of detail for the presentation.
+
+Stakeholder response:
+the stakeholder confirmed that the final presentation will have a mixed audience, mainly focused on operational teams.
+
+Expected participants:
+- Operations Management, focused on delivery performance oversight;
+- Logistics and Fulfillment teams;
+- Customer Experience team, focused on review and complaint management;
+- a smaller group of management stakeholders to review key findings and potential implications.
+
+Delivery implication:
+the final presentation must remain focused on the main operational insights, highlighting:
+- where performance issues emerge;
+- which areas require further investigation;
+- which conclusions are supported by data;
+- which limitations prevent declaring a definitive root cause.
+
+Communication decision:
+the presentation should be:
+- operational-first;
+- understandable also for management stakeholders;
+- not overly technical;
+- supported by clear visuals;
+- focused on insights, implications, and next steps;
+- explicit about methodological limitations, especially approximate ZIP-prefix coordinates and the absence of detailed operational data.
+
+Status:
+FINAL PRESENTATION AUDIENCE CLARIFIED — DOCUMENT 4 TO BE ADAPTED ACCORDINGLY
+
+FINAL POWER BI PRESENTATION COMPLETION — PRE-FINAL VALIDATION STATUS
+
+ITA
+La presentazione finale Power BI del progetto OLIST è stata completata nel file:
+
+olist_delivery_performance_final_presentation_20260430_v01.pbix
+
+Il file finale è stato creato partendo da una copia del file interim, senza sovrascrivere il report precedente:
+
+olist_delivery_performance_stakeholder_update_20260428_v01.pbix
+
+La struttura finale segue il Documento 4 — Visualization / Delivery Plan — OLIST Project ed è composta da 8 pagine:
+
+1. Cover
+2. Executive / Operational Summary
+3. Delivery Status vs Negative Review Rate
+4. Delay Range vs Negative Review Rate
+5. São Paulo vs Rest of Dataset
+6. São Paulo ZIP/City Geographic Follow-up
+7. Approval-to-Carrier Timing
+8. Data Needed / Limitations / Next Steps
+
+La vecchia slide “Critical Seller Areas” non è stata mantenuta nel flusso principale finale, perché è stata sostituita concettualmente dalle nuove viste dedicate a São Paulo:
+- São Paulo vs Rest of Dataset;
+- São Paulo ZIP/City Geographic Follow-up.
+
+È stata creata una nuova Executive / Operational Summary page per rendere la presentazione più leggibile per un’audience mista composta principalmente da:
+- Operations Management;
+- Logistics and Fulfillment teams;
+- Customer Experience team;
+- management stakeholder per key findings e implicazioni.
+
+Le slide finali mantengono un taglio operational-first e management-readable, evitando spiegazioni SQL troppo tecniche. Ogni sezione collega evidenza numerica, interpretazione, decisione operativa e limite metodologico.
+
+Durante la costruzione finale sono state completate e validate le seguenti parti:
+- Cover page;
+- Executive / Operational Summary;
+- Delivery Status vs Negative Review Rate;
+- Delay Range vs Negative Review Rate;
+- São Paulo vs Rest of Dataset;
+- São Paulo ZIP/City Geographic Follow-up;
+- Approval-to-Carrier Timing;
+- Data Needed / Limitations / Next Steps.
+
+È stato eseguito anche un controllo prestazioni tramite Power BI Performance Analyzer. Nessun visual ha mostrato tempi critici di caricamento. I visual principali sono risultati ampiamente sotto la soglia critica di 1000 ms. La mappa geografica è risultata il visual più pesante, ma comunque entro tempi pienamente accettabili.
+
+La presentazione è stata esportata in PDF con successo. Il PDF finale è stato aperto e controllato: contiene 8 pagine, l’ordine è corretto e nessuna slide risulta tagliata o illeggibile.
+
+La presentazione conferma i messaggi principali del progetto:
+- i late deliveries sono una minoranza degli ordini consegnati recensiti, ma hanno un impatto elevato sulle recensioni negative;
+- São Paulo è il principale driver di volume e mostra performance leggermente peggiori rispetto al resto del dataset;
+- alcune ZIP/city areas di São Paulo sono candidate per follow-up geografico;
+- il timing approval-to-carrier suggerisce un possibile segnale operativo pre-corriere;
+- la root cause non può essere confermata con il dataset attuale.
+
+La mappa geografica usa coordinate approssimate da ZIP-prefix. Le coordinate non rappresentano posizioni reali di seller, store, warehouse, hub o partner logistici.
+
+Decisione della fase:
+La final Power BI presentation è stata completata, salvata, testata a livello prestazionale ed esportata in PDF. Il Documento 4 non è ancora chiuso definitivamente, perché restano da completare:
+- stress test della presentazione;
+- preparazione alle domande stakeholder / portfolio interview;
+- aggiornamento finale del General Journal dopo il completamento di questi due blocchi.
+
+Limite:
+La presentazione identifica associazioni rilevanti e aree prioritarie di follow-up, ma non dichiara una root cause confermata. Per procedere a una root-cause analysis servono dati operativi aggiuntivi su seller/store mapping, operational clusters, carrier, pickup/dispatch/handoff timestamps, preparation time, stock availability, backlog, capacity, staffing e workload.
+
+ENG
+The final Power BI presentation for the OLIST project was completed in the file:
+
+olist_delivery_performance_final_presentation_20260430_v01.pbix
+
+The final file was created from a copy of the interim report, without overwriting the previous file:
+
+olist_delivery_performance_stakeholder_update_20260428_v01.pbix
+
+The final structure follows Document 4 — Visualization / Delivery Plan — OLIST Project and includes 8 pages:
+
+1. Cover
+2. Executive / Operational Summary
+3. Delivery Status vs Negative Review Rate
+4. Delay Range vs Negative Review Rate
+5. São Paulo vs Rest of Dataset
+6. São Paulo ZIP/City Geographic Follow-up
+7. Approval-to-Carrier Timing
+8. Data Needed / Limitations / Next Steps
+
+The previous “Critical Seller Areas” slide was not kept in the main final flow, because it was conceptually replaced by the new São Paulo-focused views:
+- São Paulo vs Rest of Dataset;
+- São Paulo ZIP/City Geographic Follow-up.
+
+A new Executive / Operational Summary page was created to make the presentation more readable for a mixed audience mainly composed of:
+- Operations Management;
+- Logistics and Fulfillment teams;
+- Customer Experience team;
+- management stakeholders for key findings and implications.
+
+The final slides follow an operational-first and management-readable style, avoiding overly technical SQL explanations. Each section connects numerical evidence, interpretation, operational decision, and methodological limitation.
+
+During the final build, the following sections were completed and validated:
+- Cover page;
+- Executive / Operational Summary;
+- Delivery Status vs Negative Review Rate;
+- Delay Range vs Negative Review Rate;
+- São Paulo vs Rest of Dataset;
+- São Paulo ZIP/City Geographic Follow-up;
+- Approval-to-Carrier Timing;
+- Data Needed / Limitations / Next Steps.
+
+A performance check was also performed using Power BI Performance Analyzer. No visual showed critical loading times. The main visuals were well below the critical 1000 ms threshold. The geographic map was the heaviest visual, but still within fully acceptable timing.
+
+The presentation was successfully exported to PDF. The final PDF was opened and reviewed: it contains 8 pages, the page order is correct, and no slide is cut off or unreadable.
+
+The presentation confirms the main project messages:
+- late deliveries represent a minority of delivered reviewed orders, but have a high impact on negative reviews;
+- São Paulo is the main volume driver and shows slightly weaker performance than the rest of the dataset;
+- selected São Paulo ZIP/city areas are candidates for geographic follow-up;
+- approval-to-carrier timing suggests a possible pre-carrier operational signal;
+- root cause cannot be confirmed with the current dataset.
+
+The geographic map uses approximate ZIP-prefix coordinates. These coordinates do not represent real seller, store, warehouse, hub, or logistics partner locations.
+
+Phase decision:
+The final Power BI presentation was completed, saved, performance-tested, and exported to PDF. Document 4 is not fully closed yet, because the following blocks still need to be completed:
+- presentation stress test;
+- stakeholder / portfolio interview Q&A preparation;
+- final General Journal update after these two blocks are completed.
+
+Limitation:
+The presentation identifies relevant associations and priority follow-up areas, but it does not claim a confirmed root cause. To proceed with root-cause analysis, additional operational data is required on seller/store mapping, operational clusters, carriers, pickup/dispatch/handoff timestamps, preparation time, stock availability, backlog, capacity, staffing, and workload.
+
+STATUS:
+FINAL POWER BI PRESENTATION COMPLETED — PERFORMANCE CHECK OK — PDF EXPORTED AND REVIEWED — STRESS TEST AND Q&A PREPARATION PENDING
+
+FINAL STRESS TEST AND Q&A PREPARATION — DOCUMENT 4 CLOSURE
+
+ITA
+Dopo il completamento della final Power BI presentation e dell’esportazione PDF, è stato eseguito lo stress test finale della presentazione.
+
+Lo stress test non ha avuto l’obiettivo di ricontrollare layout o formattazione delle slide, già validati in precedenza, ma di verificare se il progetto regge a domande critiche da parte di stakeholder operativi, management o portfolio reviewer.
+
+Sono state testate le principali aree critiche della presentazione:
+- rilevanza dei late deliveries nonostante rappresentino solo il 6,65% degli ordini consegnati recensiti;
+- distinzione tra associazione osservata e causalità non confermata;
+- interpretazione di São Paulo come area prioritaria, principalmente per volume e leggermente peggiore per performance;
+- limite della mappa geografica basata su coordinate approssimate da ZIP-prefix;
+- interpretazione prudente del timing approval-to-carrier;
+- motivo per cui non vengono proposti interventi operativi immediati;
+- motivo per cui la vecchia slide Critical Seller Areas è stata rimossa dal flusso principale finale;
+- dati operativi necessari per confermare una root cause.
+
+Durante la preparazione Q&A è stata corretta la formulazione delle risposte per evitare linguaggio causale non supportato. In particolare, è stato deciso di evitare termini come “dimostra”, “causa” e “genera” quando si parla del rapporto tra ritardi e recensioni negative.
+
+Formulazione corretta da usare:
+- i dati mostrano;
+- i dati indicano;
+- i late deliveries sono associati a;
+- il timing approval-to-carrier suggerisce un possibile segnale operativo;
+- la root cause non è confermata con il dataset attuale.
+
+Conclusione sintetica validata:
+I dati mostrano che i late deliveries sono una minoranza degli ordini consegnati recensiti, ma sono fortemente associati a recensioni negative; tuttavia, il dataset attuale non consente di confermare la root cause senza ulteriori dati operativi.
+
+Prossimo passo operativo validato:
+Integrare dati reali su seller, store, hub, carrier e processo operativo. In particolare:
+- posizione reale di seller, store, warehouse o hub;
+- cluster operativi o aree di gestione;
+- carrier utilizzati per ordine o area;
+- pickup point, hub o centri di smistamento;
+- pickup, dispatch e handoff timestamps;
+- capacità operativa;
+- stock availability;
+- backlog;
+- staffing e workload.
+
+Decisione finale:
+Lo stress test è stato superato. La presentazione finale è pronta per stakeholder review e per utilizzo portfolio. Il Documento 4 — Visualization / Delivery Plan — OLIST Project può essere considerato completato.
+
+ENG
+After completing the final Power BI presentation and exporting the PDF, the final presentation stress test was performed.
+
+The purpose of the stress test was not to re-check slide layout or formatting, which had already been validated, but to verify whether the project could withstand critical questions from operational stakeholders, management, or portfolio reviewers.
+
+The main critical areas of the presentation were tested:
+- relevance of late deliveries even though they represent only 6.65% of delivered reviewed orders;
+- distinction between observed association and unconfirmed causality;
+- interpretation of São Paulo as a priority area, mainly because of volume and slightly weaker performance;
+- limitation of the geographic map based on approximate ZIP-prefix coordinates;
+- cautious interpretation of approval-to-carrier timing;
+- reason why immediate operational interventions are not proposed;
+- reason why the previous Critical Seller Areas slide was removed from the main final flow;
+- operational data needed to confirm root cause.
+
+During the Q&A preparation, the wording of answers was corrected to avoid unsupported causal language. In particular, terms such as “proves”, “causes”, and “generates” should be avoided when discussing the relationship between delivery delays and negative reviews.
+
+Correct wording to use:
+- the data shows;
+- the data indicates;
+- late deliveries are associated with;
+- approval-to-carrier timing suggests a possible operational signal;
+- root cause is not confirmed with the current dataset.
+
+Validated summary conclusion:
+The data shows that late deliveries represent a minority of delivered reviewed orders, but they are strongly associated with negative reviews; however, the current dataset does not allow root cause to be confirmed without additional operational data.
+
+Validated next operational step:
+Integrate real operational data on sellers, stores, hubs, carriers, and operational processes. In particular:
+- real location of sellers, stores, warehouses, or hubs;
+- operational clusters or management areas;
+- carriers used by order or area;
+- pickup points, hubs, or sorting centers;
+- pickup, dispatch, and handoff timestamps;
+- operational capacity;
+- stock availability;
+- backlog;
+- staffing and workload.
+
+Final decision:
+The stress test was passed. The final presentation is ready for stakeholder review and portfolio use. Document 4 — Visualization / Delivery Plan — OLIST Project can be considered completed.
+
+STATUS:
+FINAL STRESS TEST COMPLETED — Q&A PREPARATION COMPLETED — DOCUMENT 4 CLOSED
+
+APPENDIX — STRESS TEST Q&A
+
+ITA
+
+1. Perché dovremmo concentrarci sui late deliveries se rappresentano solo il 6,65% degli ordini consegnati recensiti?
+
+Risposta:
+Perché i late deliveries rappresentano solo il 6,65% degli ordini consegnati recensiti, ma mostrano un negative review rate del 62,41%.
+
+Quindi non è un problema di grande volume complessivo, ma quando il ritardo si verifica è fortemente associato a insoddisfazione cliente.
+
+Rischio da evitare:
+Non presentare il dato come causalità dimostrata.
+
+
+2. Possiamo dire che i ritardi causano le recensioni negative?
+
+Risposta:
+No, non possiamo confermare che le recensioni negative siano causate dai ritardi.
+
+Possiamo però dire che i late deliveries sono fortemente associati a un negative review rate più alto, già dal range 1–7 giorni di ritardo.
+
+Per confermare la root cause servirebbero dati operativi aggiuntivi, come carrier, seller/store mapping, pickup, handoff, stock, backlog, capacità e staffing.
+
+Rischio da evitare:
+Evitare parole come “causano”, “generano” o “dimostrano”.
+
+
+3. São Paulo è davvero un problema operativo o emerge solo perché ha più ordini?
+
+Risposta:
+São Paulo emerge principalmente perché ha il volume più alto: 68.155 ordini consegnati recensiti contro 28.080 del resto del dataset.
+
+Non possiamo dire che sia una root cause. Però mostra anche performance leggermente peggiori: late delivery rate e negative review rate sono più alte rispetto al resto del dataset.
+
+Quindi São Paulo non va trattata come problema già confermato, ma come area prioritaria da analizzare più da vicino.
+
+Rischio da evitare:
+Non dire che il volume causa i ritardi.
+
+
+4. La mappa mostra dove si trovano realmente seller, store, magazzini o hub?
+
+Risposta:
+La mappa non mostra la posizione reale di seller, store, magazzini o hub.
+
+Mostra coordinate approssimate derivate da ZIP-prefix, utili per visualizzare in modo macro dove si concentrano alcune aree seller-origin candidate dentro São Paulo.
+
+Quindi la mappa serve per prioritizzare il follow-up geografico, non per localizzare fisicamente strutture operative.
+
+Rischio da evitare:
+Non presentare la mappa come localizzazione esatta.
+
+
+5. Possiamo dire che il problema nasce prima del corriere?
+
+Risposta:
+Non possiamo dirlo con certezza.
+
+Possiamo dire che gli ordini late mostrano un tempo medio approval-to-carrier più alto, circa 5,52 giorni, rispetto agli ordini early e on-time.
+
+Questo suggerisce un possibile segnale nella fase pre-corriere, ma per confermarlo servono dati operativi più dettagliati: seller/store mapping, cluster operativi, posizione reale di seller/store/hub, carrier utilizzati, pickup, dispatch, handoff, capacità, stock, backlog e staffing.
+
+Rischio da evitare:
+Non dichiarare che la fase pre-corriere è la causa confermata.
+
+
+6. Perché non proponi subito un intervento operativo concreto?
+
+Risposta:
+Non propongo subito un intervento operativo concreto perché il dataset attuale identifica associazioni, ma non conferma la root cause.
+
+I dati mostrano che i late deliveries sono fortemente associati a recensioni negative e che São Paulo e la fase approval-to-carrier meritano follow-up.
+
+Però, prima di definire azioni correttive, servono dati operativi più specifici su seller/store, carrier, pickup, handoff, stock, backlog, capacità e staffing.
+
+Rischio da evitare:
+Non proporre azioni correttive senza dati operativi sufficienti.
+
+
+7. Perché hai rimosso la vecchia slide Critical Seller Areas dal flusso principale finale?
+
+Risposta:
+La slide Critical Seller Areas era utile nella fase intermedia, perché ha aiutato a individuare la concentrazione nello stato di São Paulo e a motivare il follow-up.
+
+Nella presentazione finale è stata rimossa dal flusso principale perché sarebbe risultata ripetitiva: il focus finale è stato aggiornato con due viste più precise, São Paulo vs Rest of Dataset e São Paulo ZIP/City Geographic Follow-up.
+
+Queste due slide rispondono meglio alla domanda finale: São Paulo emerge solo per volume o anche per performance, e quali aree ZIP/city meritano ulteriore analisi.
+
+Rischio da evitare:
+Non dire che la slide era sbagliata; era valida come passaggio intermedio.
+
+
+8. Quali dati servono per confermare la root cause?
+
+Risposta:
+Per confermare la root cause servono dati operativi più dettagliati su:
+- seller/store mapping;
+- cluster operativi;
+- posizione reale di seller, store, warehouse o hub;
+- carrier utilizzati per ordine o area;
+- pickup, dispatch e handoff timestamps;
+- capacità operativa;
+- stock availability;
+- backlog;
+- staffing e workload.
+
+Con questi dati potremmo verificare se il problema dipende da seller processing, magazzino, handoff al carrier, capacità, stock o altri vincoli operativi.
+
+Rischio da evitare:
+Non dichiarare root cause prima di avere questi dati.
+
+
+9. Qual è la conclusione principale del progetto in una frase?
+
+Risposta:
+I dati mostrano che i late deliveries sono una minoranza degli ordini consegnati recensiti, ma sono fortemente associati a recensioni negative; tuttavia, il dataset attuale non consente di confermare la root cause senza ulteriori dati operativi.
+
+Rischio da evitare:
+Non usare “dimostrano” o “causano”.
+
+
+10. Se dovessi indicare il prossimo passo operativo, quale sarebbe?
+
+Risposta:
+Il prossimo passo operativo è integrare dati reali su seller, store, hub e carrier.
+
+In particolare, bisogna identificare:
+- la posizione reale di seller, store o warehouse;
+- eventuali cluster operativi o aree di gestione;
+- quali carrier vengono usati per gli ordini;
+- dove si trovano pickup point, hub o centri di smistamento;
+- se esistono vincoli di capacità, stock, backlog o staffing.
+
+Solo dopo questo confronto si può passare da priorità di follow-up a root-cause analysis.
+
+Rischio da evitare:
+Non trasformare il follow-up in raccomandazione correttiva definitiva.
+
+
+ENG
+
+1. Why should we focus on late deliveries if they represent only 6.65% of delivered reviewed orders?
+
+Answer:
+Because late deliveries represent only 6.65% of delivered reviewed orders, but they show a negative review rate of 62.41%.
+
+Therefore, this is not a high-volume issue overall, but when a delay occurs, it is strongly associated with customer dissatisfaction.
+
+Risk to avoid:
+Do not present the result as proven causality.
+
+
+2. Can we say that delays cause negative reviews?
+
+Answer:
+No, we cannot confirm that negative reviews are caused by delays.
+
+However, we can say that late deliveries are strongly associated with a higher negative review rate, already from the 1–7 day delay range.
+
+To confirm the root cause, additional operational data would be required, such as carrier, seller/store mapping, pickup, handoff, stock, backlog, capacity, and staffing.
+
+Risk to avoid:
+Avoid words such as “cause”, “generate”, or “prove”.
+
+
+3. Is São Paulo really an operational problem, or does it only stand out because it has more orders?
+
+Answer:
+São Paulo stands out mainly because it has the highest volume: 68,155 delivered reviewed orders versus 28,080 in the rest of the dataset.
+
+We cannot say that São Paulo is a root cause. However, it also shows slightly weaker performance: late delivery rate and negative review rate are higher than in the rest of the dataset.
+
+Therefore, São Paulo should not be treated as a confirmed problem, but as a priority area for deeper analysis.
+
+Risk to avoid:
+Do not say that volume causes delays.
+
+
+4. Does the map show where sellers, stores, warehouses, or hubs are actually located?
+
+Answer:
+No. The map does not show the real location of sellers, stores, warehouses, or hubs.
+
+It shows approximate coordinates derived from ZIP-prefixes, useful to visualize at a macro level where some candidate seller-origin areas are concentrated within São Paulo.
+
+Therefore, the map is useful to prioritize geographic follow-up, not to physically locate operational facilities.
+
+Risk to avoid:
+Do not present the map as exact location mapping.
+
+
+5. Can we say that the issue starts before the carrier?
+
+Answer:
+We cannot say that with certainty.
+
+We can say that late orders show a higher average approval-to-carrier time, around 5.52 days, compared with early and on-time orders.
+
+This suggests a possible pre-carrier operational signal, but confirming it would require more detailed operational data: seller/store mapping, operational clusters, real seller/store/hub locations, carriers used, pickup, dispatch, handoff, capacity, stock, backlog, and staffing.
+
+Risk to avoid:
+Do not claim that the pre-carrier phase is the confirmed cause.
+
+
+6. Why do you not propose an immediate concrete operational intervention?
+
+Answer:
+I do not propose an immediate concrete operational intervention because the current dataset identifies associations, but does not confirm the root cause.
+
+The data shows that late deliveries are strongly associated with negative reviews, and that São Paulo and the approval-to-carrier phase deserve follow-up.
+
+However, before defining corrective actions, more specific operational data is needed on seller/store, carrier, pickup, handoff, stock, backlog, capacity, and staffing.
+
+Risk to avoid:
+Do not propose corrective actions without sufficient operational data.
+
+
+7. Why did you remove the previous Critical Seller Areas slide from the main final flow?
+
+Answer:
+The Critical Seller Areas slide was useful during the interim phase because it helped identify the concentration in São Paulo state and supported the follow-up.
+
+In the final presentation, it was removed from the main flow because it would have been repetitive. The final focus was updated with two more precise views: São Paulo vs Rest of Dataset and São Paulo ZIP/City Geographic Follow-up.
+
+These two slides better answer the final question: whether São Paulo stands out only because of volume or also because of performance, and which ZIP/city areas deserve further analysis.
+
+Risk to avoid:
+Do not say that the slide was wrong; it was valid as an interim step.
+
+
+8. What data is needed to confirm the root cause?
+
+Answer:
+To confirm the root cause, more detailed operational data is needed on:
+- seller/store mapping;
+- operational clusters;
+- real location of sellers, stores, warehouses, or hubs;
+- carriers used by order or area;
+- pickup, dispatch, and handoff timestamps;
+- operational capacity;
+- stock availability;
+- backlog;
+- staffing and workload.
+
+With this data, we could verify whether the issue depends on seller processing, warehouse operations, carrier handoff, capacity, stock, or other operational constraints.
+
+Risk to avoid:
+Do not declare a root cause before having this data.
+
+
+9. What is the main conclusion of the project in one sentence?
+
+Answer:
+The data shows that late deliveries represent a minority of delivered reviewed orders, but they are strongly associated with negative reviews; however, the current dataset does not allow the root cause to be confirmed without additional operational data.
+
+Risk to avoid:
+Do not use “prove” or “cause”.
+
+
+10. If you had to indicate the next operational step, what would it be?
+
+Answer:
+The next operational step is to integrate real data on sellers, stores, hubs, and carriers.
+
+In particular, it is necessary to identify:
+- the real location of sellers, stores, or warehouses;
+- any operational clusters or management areas;
+- which carriers are used for the orders;
+- where pickup points, hubs, or sorting centers are located;
+- whether there are capacity, stock, backlog, or staffing constraints.
+
+Only after this comparison can the analysis move from follow-up prioritization to root-cause analysis.
+
+Risk to avoid:
+Do not turn the follow-up into a definitive corrective recommendation.
+
+SÃO PAULO DIAGNOSTIC DASHBOARD FOLLOW-UP — FINAL COMPLETION
+
+ITA
+Dopo la chiusura della final Power BI presentation, è stata completata una dashboard diagnostica separata come estensione di apprendimento e follow-up post-presentation.
+
+Questa attività non modifica lo Scope of Work principale e non cambia le conclusioni della final presentation. È stata gestita come deliverable separato, con l’obiettivo di mostrare come gli insight finali possano essere trasformati in una vista interattiva di business intelligence.
+
+File Power BI creato:
+
+olist_sp_diagnostic_dashboard_followup_20260502_v01.pbix
+
+Output dati creato:
+
+sp_city_diagnostic_dashboard_v01.csv
+
+La dashboard è una vista statica e interattiva basata sul dataset storico OLIST. Non è una dashboard operativa live.
+
+Obiettivo:
+supportare la prioritizzazione del follow-up sulle città seller-origin candidate nello stato di São Paulo.
+
+Struttura della dashboard:
+- titolo e sottotitolo descrittivo;
+- nota introduttiva che chiarisce che la dashboard supporta solo la prioritizzazione e non conferma la root cause;
+- KPI benchmark per le candidate areas di São Paulo;
+- tabella interattiva City Ranking;
+- KPI dinamiche per la città o gruppo di città selezionate;
+- mappa city-level con coordinate medie approssimate;
+- nota metodologica su “Below SP Average”;
+- testo alternativo per ogni elemento visual.
+
+Metriche incluse:
+- delivered reviewed orders;
+- late delivery rate;
+- negative review rate;
+- average approval-to-carrier days;
+- average delay days;
+- follow-up priority;
+- coordinate medie city-level.
+
+La tabella City Ranking consente di selezionare una o più città. Le KPI Selected City e la mappa reagiscono alla selezione, mentre le KPI São Paulo Area Benchmark restano fisse come riferimento.
+
+La mappa usa coordinate medie approssimate a livello città, derivate dai ZIP-prefix disponibili nel dataset. Non rappresenta posizioni reali di seller, store, warehouse, hub o partner logistici.
+
+È stata aggiunta una nota metodologica per chiarire il significato di “Below SP Average”:
+la città è sotto il livello medio delle città candidate di São Paulo mostrate nella dashboard, calcolato sulle metriche late delivery rate, negative review rate e approval-to-carrier time. Le città candidate incluse hanno almeno 100 delivered reviewed orders.
+
+È stato eseguito un controllo prestazioni tramite Power BI Performance Analyzer. Le KPI card e la mappa hanno mostrato tempi di caricamento accettabili, senza criticità. L’interazione dalla tabella ranking verso KPI e mappa è risultata funzionante.
+
+È stato aggiunto testo alternativo a tutti gli elementi principali della dashboard, incluse KPI, tabella ranking, mappa, note e titoli, per migliorare accessibilità e documentazione.
+
+Decisione finale:
+la São Paulo Diagnostic Dashboard è completata e salvata. La dashboard può essere usata come estensione portfolio per dimostrare capacità di progettazione di dashboard interattive in Power BI.
+
+Limite:
+la dashboard supporta la prioritizzazione del follow-up, ma non conferma root cause. Per passare a una root-cause analysis servono dati operativi aggiuntivi su seller/store mapping, cluster operativi, carrier, pickup, dispatch, handoff, capacità, stock, backlog, staffing e workload.
+
+ENG
+After closing the final Power BI presentation, a separate diagnostic dashboard was completed as a learning extension and post-presentation follow-up.
+
+This activity does not modify the main Scope of Work and does not change the conclusions of the final presentation. It was managed as a separate deliverable, with the goal of showing how final insights can be translated into an interactive business intelligence view.
+
+Power BI file created:
+
+olist_sp_diagnostic_dashboard_followup_20260502_v01.pbix
+
+Data output created:
+
+sp_city_diagnostic_dashboard_v01.csv
+
+The dashboard is a static interactive view based on the historical OLIST dataset. It is not a live operational dashboard.
+
+Objective:
+support follow-up prioritization across candidate seller-origin cities in São Paulo state.
+
+Dashboard structure:
+- title and descriptive subtitle;
+- introductory note clarifying that the dashboard supports prioritization only and does not confirm root cause;
+- benchmark KPIs for São Paulo candidate areas;
+- interactive City Ranking table;
+- dynamic KPIs for the selected city or group of cities;
+- city-level map with approximate average coordinates;
+- methodological note explaining “Below SP Average”;
+- alternative text for each visual element.
+
+Metrics included:
+- delivered reviewed orders;
+- late delivery rate;
+- negative review rate;
+- average approval-to-carrier days;
+- average delay days;
+- follow-up priority;
+- city-level average coordinates.
+
+The City Ranking table allows selecting one or multiple cities. The Selected City KPI cards and the map react to the selection, while the São Paulo Area Benchmark KPI cards remain fixed as reference values.
+
+The map uses approximate city-level average coordinates derived from ZIP-prefix data available in the dataset. It does not represent real seller, store, warehouse, hub, or logistics partner locations.
+
+A methodological note was added to clarify the meaning of “Below SP Average”:
+the city is below the average level of the São Paulo candidate cities shown in the dashboard, based on late delivery rate, negative review rate, and approval-to-carrier time. Candidate cities included have at least 100 delivered reviewed orders.
+
+A performance check was performed using Power BI Performance Analyzer. The KPI cards and map showed acceptable loading times, with no critical issue. The interaction from the ranking table to KPI cards and map worked correctly.
+
+Alternative text was added to all main dashboard elements, including KPI cards, ranking table, map, notes, and titles, to improve accessibility and documentation.
+
+Final decision:
+the São Paulo Diagnostic Dashboard is completed and saved. The dashboard can be used as a portfolio extension to demonstrate interactive dashboard design skills in Power BI.
+
+Limitation:
+the dashboard supports follow-up prioritization, but it does not confirm root cause. To move to root-cause analysis, additional operational data is required on seller/store mapping, operational clusters, carriers, pickup, dispatch, handoff, capacity, stock, backlog, staffing, and workload.
+
+STATUS:
+SÃO PAULO DIAGNOSTIC DASHBOARD FOLLOW-UP COMPLETED — STATIC INTERACTIVE POWER BI DASHBOARD READY FOR PORTFOLIO USE
+

@@ -1,0 +1,357 @@
+ANALYSIS JOURNAL
+
+REFERENCE DOCUMENTATION
+
+Main working file:
+06_step7_analysis_start.sql
+
+Project phase:
+ANALYSIS START
+
+RELATED PROJECT DOCUMENTATION / FILES
+
+Project directory:
+3_olist_23042026
+
+Dataset / raw data folder:
+olist_raw_23042026
+
+Main data quality and preprocessing document:
+olist_data_quality_23042026
+
+Project scope:
+Scope of Work OLIST V1
+
+Related SQL files:
+- 01_step2_data_type_checks.sql
+- 02_step3_data_type_conversions.sql
+- 03_step4_basic_data_quality.sql
+- 04_step5_logical_consistency.sql
+- 05_step6_kpi_check.sql
+- 06_step7_analysis_start.sql
+
+Related Python file:
+- olist.py
+
+
+ITA
+
+Durante questa fase è stato avviato e completato il primo blocco analitico nel file 06_step7_analysis_start.sql.
+
+L’obiettivo dell’analisi era verificare se performance di consegna, gap tra data stimata e data reale di consegna, e review score fossero associati all’insoddisfazione cliente.
+
+È stata costruita una base analitica a livello order_id, collegando ordini e recensioni tramite order_id. Durante i controlli è stata corretta la logica di calcolo del ritardo: invece di usare il timestamp completo, è stata usata la differenza tra date calendario:
+
+order_delivered_customer_date::date - order_estimated_delivery_date::date
+
+Questa correzione ha permesso di distinguere correttamente ordini consegnati in anticipo, puntuali e in ritardo.
+
+Il primo risultato ha mostrato che la maggior parte degli ordini consegnati e collegati a recensioni valide arriva prima della data stimata:
+- early: 88.653 ordini — 92,01%
+- on_time: 1.291 ordini — 1,34%
+- late: 6.409 ordini — 6,65%
+
+Quindi il problema non appare come una lentezza generale delle consegne.
+
+Tuttavia, incrociando lo stato di consegna con review_score e negative_review_rate, è emersa una forte associazione tra ritardo e insoddisfazione:
+- early: avg_review_score 4,29 — negative_review_rate 9,23%
+- on_time: avg_review_score 4,03 — negative_review_rate 12,39%
+- late: avg_review_score 2,27 — negative_review_rate 62,41%
+
+È stata poi eseguita un’analisi per fasce di ritardo. La fascia 1–7 giorni presenta il volume più alto tra gli ordini in ritardo e un negative_review_rate del 49,42%. Le fasce 8–60 giorni mostrano negative review rate molto elevati, spesso superiori al 70–80%.
+
+Inizialmente l’attenzione era stata posta sui ritardi tra 8 e 60 giorni, ma dopo revisione è stato deciso di includere anche la fascia 1–7 giorni, perché il volume era rilevante e l’impatto sulle recensioni era comunque materialmente peggiore rispetto agli ordini early e on_time. Il range operativo finale è quindi diventato 1–60 giorni.
+
+È stata testata la categoria prodotto come possibile spiegazione dei ritardi, ma le categorie risultavano varie e la query poteva duplicare righe a causa della relazione con order_items. Per questo motivo, la categoria prodotto è stata mantenuta come controllo esplorativo, ma non come direzione principale.
+
+È stata testata anche la relazione seller ZIP → customer ZIP per verificare se esistessero tratte specifiche associate ai ritardi. Non è emerso un percorso ricorrente chiaro. Questo ha portato a spostare l’attenzione sull’area di origine della spedizione.
+
+È stata quindi costruita una query sui seller_zip_code_prefix, selezionando le aree critiche con questi criteri:
+- total_delivered_orders >= 10
+- delayed_orders_rate_percent >= 11
+- avg_review_score < 3
+- negative_review_rate_percent > 50
+
+Questa analisi ha individuato seller ZIP critici dove i ritardi tra 1 e 60 giorni hanno un’incidenza rilevante sul totale degli ordini consegnati e sono associati a review score basso e negative review rate elevato.
+
+Successivamente i seller ZIP critici sono stati mappati con la tabella geolocation, usando:
+- geolocation_zip_code_prefix
+- geolocation_lat
+- geolocation_lng
+- geolocation_city
+- geolocation_state
+
+La mappatura ha mostrato una concentrazione rilevante nello stato di São Paulo, soprattutto nella città di São Paulo e in aree commerciali/logistiche collegate. Sono presenti anche altri stati, ma São Paulo risulta l’area più evidente.
+
+Successivamente è stato individuato un punto analitico mancante: non erano ancora stati calcolati il tempo tra ordine e approvazione dell’ordine e il tempo tra approvazione dell’ordine e consegna al corriere.
+
+È stata quindi aggiunta una query sui tempi intermedi del processo ordine:
+- order_purchase_timestamp → order_approved_at
+- order_approved_at → order_delivered_carrier_date
+
+La query ha calcolato:
+- avg_approval_time_days
+- avg_approval_to_carrier_days
+- avg_delivery_delay_days
+- avg_review_score
+- negative_review_rate_percent
+
+I risultati principali sono stati:
+- early: avg_approval_time_days 0,42 — avg_approval_to_carrier_days 2,58 — avg_delivery_delay_days -13,71 — avg_review_score 4,29 — negative_review_rate 9,23%
+- on_time: avg_approval_time_days 0,52 — avg_approval_to_carrier_days 4,19 — avg_delivery_delay_days 0,00 — avg_review_score 4,03 — negative_review_rate 12,39%
+- late: avg_approval_time_days 0,51 — avg_approval_to_carrier_days 5,52 — avg_delivery_delay_days 10,53 — avg_review_score 2,27 — negative_review_rate 62,42%
+
+Questo controllo ha mostrato che il tempo tra ordine e approvazione non sembra spiegare il problema, perché è molto simile tra early, on_time e late.
+
+La differenza più rilevante emerge invece nel tempo tra approvazione ordine e consegna al corriere. Gli ordini late mostrano una media di 5,52 giorni, contro 2,58 giorni per gli ordini early e 4,19 giorni per gli ordini on_time.
+
+Questa evidenza suggerisce che parte del ritardo possa iniziare prima della consegna finale al cliente, nella fase pre-corriere: preparazione ordine, gestione magazzino, processo seller, disponibilità merce, programmazione pickup o handoff al corriere.
+
+È stata formulata una nuova ipotesi operativa: gli ordini late potrebbero non ricevere una gestione operativa sufficientemente tempestiva o prioritaria nella fase pre-corriere.
+
+Questa ipotesi non dimostra una mancanza intenzionale di priorità, perché il dataset non contiene campi come order priority, queue management, capacità del magazzino, disponibilità stock, assegnazione corriere o logiche interne di lavorazione ordine.
+
+Tuttavia, il dato è rilevante perché una media di 5,52 giorni tra approvazione e consegna al corriere appare operativamente alta, soprattutto considerando che l’analisi per categoria prodotto non ha individuato una sola tipologia merceologica responsabile. Per alcune categorie, come orologi o piccoli articoli di consumo, diversi giorni prima dell’handoff al corriere non sembrano giustificabili senza problemi di stock, magazzino, processo seller, pickup, disponibilità corriere o priorità operativa.
+
+Decisione analitica:
+la direzione principale dell’analisi passa dalla categoria prodotto e dalle tratte specifiche alla concentrazione geografica dei seller ZIP critici. La nuova analisi sui tempi approval-to-carrier aggiunge un segnale operativo importante: parte del problema potrebbe iniziare nella fase pre-corriere, prima della consegna finale.
+
+Limitazione:
+l’analisi mostra associazioni forti, ma non dimostra la root cause. Per identificare la causa reale servono dati operativi aggiuntivi, come corrieri utilizzati, cluster operativi, hub logistici, pickup date, dispatch date, carrier handoff date, gestione del magazzino, capacità operativa dei seller, disponibilità stock, backlog, staffing e workload.
+
+Stato:
+ANALYSIS BLOCK COMPLETED - READY FOR STAKEHOLDER REVIEW
+
+
+ENG
+
+During this phase, the first analytical block was started and completed in the file 06_step7_analysis_start.sql.
+
+The objective of the analysis was to evaluate whether delivery performance, the gap between estimated and actual delivery date, and review score were associated with customer dissatisfaction.
+
+An order-level analytical base was built by joining orders and reviews through order_id. During validation, the delay calculation logic was corrected: instead of using the full timestamp, the analysis used the difference between calendar dates:
+
+order_delivered_customer_date::date - order_estimated_delivery_date::date
+
+This correction allowed the analysis to correctly distinguish between early, on-time, and late deliveries.
+
+The first result showed that most delivered orders linked to valid reviews arrived before the estimated delivery date:
+- early: 88,653 orders — 92.01%
+- on_time: 1,291 orders — 1.34%
+- late: 6,409 orders — 6.65%
+
+Therefore, delivery does not appear to be generally slow across the dataset.
+
+However, when delivery status was compared with review_score and negative_review_rate, a strong association between delay and dissatisfaction emerged:
+- early: avg_review_score 4.29 — negative_review_rate 9.23%
+- on_time: avg_review_score 4.03 — negative_review_rate 12.39%
+- late: avg_review_score 2.27 — negative_review_rate 62.41%
+
+A delay bucket analysis was then performed. The 1–7 days bucket had the highest volume among delayed orders and a negative_review_rate of 49.42%. The 8–60 days buckets showed very high negative review rates, often above 70–80%.
+
+Initially, the focus was on delays between 8 and 60 days. After review, the 1–7 days bucket was also included because its volume was relevant and its impact on reviews was still materially worse than early and on-time deliveries. The final operational delay range became 1–60 days.
+
+Product category was tested as a possible explanation for the delays, but delayed orders were distributed across several categories and the query could duplicate rows due to the relationship with order_items. For this reason, product category was kept as an exploratory check, but not as the main analytical direction.
+
+The seller ZIP → customer ZIP relationship was also tested to check whether specific routes were associated with delays. No clear recurring route pattern emerged. This shifted the analysis toward shipment origin area.
+
+A seller_zip_code_prefix query was then built, selecting critical areas using the following criteria:
+- total_delivered_orders >= 10
+- delayed_orders_rate_percent >= 11
+- avg_review_score < 3
+- negative_review_rate_percent > 50
+
+This analysis identified critical seller ZIP prefixes where delays between 1 and 60 days represented a relevant share of delivered orders and were associated with low review scores and high negative review rates.
+
+The critical seller ZIP prefixes were then mapped to the geolocation table using:
+- geolocation_zip_code_prefix
+- geolocation_lat
+- geolocation_lng
+- geolocation_city
+- geolocation_state
+
+The mapping showed a relevant concentration in São Paulo state, especially in the city of São Paulo and connected commercial/logistics areas. Other states are also present, but São Paulo appears to be the most evident area.
+
+A missing analytical point was then identified: the analysis had not yet calculated the time between order purchase and order approval, or the time between order approval and carrier handoff.
+
+A new query was added to measure the intermediate timing of the order process:
+- order_purchase_timestamp → order_approved_at
+- order_approved_at → order_delivered_carrier_date
+
+The query calculated:
+- avg_approval_time_days
+- avg_approval_to_carrier_days
+- avg_delivery_delay_days
+- avg_review_score
+- negative_review_rate_percent
+
+The main results were:
+- early: avg_approval_time_days 0.42 — avg_approval_to_carrier_days 2.58 — avg_delivery_delay_days -13.71 — avg_review_score 4.29 — negative_review_rate 9.23%
+- on_time: avg_approval_time_days 0.52 — avg_approval_to_carrier_days 4.19 — avg_delivery_delay_days 0.00 — avg_review_score 4.03 — negative_review_rate 12.39%
+- late: avg_approval_time_days 0.51 — avg_approval_to_carrier_days 5.52 — avg_delivery_delay_days 10.53 — avg_review_score 2.27 — negative_review_rate 62.42%
+
+This check showed that the time between order purchase and order approval does not appear to explain the problem, because it is very similar across early, on-time, and late deliveries.
+
+The most relevant difference appears instead in the time between order approval and carrier handoff. Late orders show an average of 5.52 days, compared with 2.58 days for early orders and 4.19 days for on-time orders.
+
+This evidence suggests that part of the delay may start before final customer delivery, during the pre-carrier phase: order preparation, warehouse handling, seller process, stock availability, pickup scheduling, or carrier handoff.
+
+A new operational hypothesis was formulated: late orders may not receive sufficiently timely or prioritized operational handling during the pre-carrier phase.
+
+This hypothesis does not prove intentional deprioritization, because the dataset does not include fields such as order priority, queue management, warehouse capacity, stock availability, carrier assignment, or internal order processing rules.
+
+However, the finding is relevant because an average of 5.52 days between approval and carrier handoff appears operationally high, especially considering that the product category analysis did not identify one specific product type as the main driver. For some categories, such as watches or small consumer items, several days before carrier handoff do not appear justifiable unless there are stock, warehouse, seller process, pickup, carrier availability, or operational priority issues.
+
+Analytical decision:
+the main analytical direction shifts from product category and specific routes to the geographic concentration of critical seller ZIP prefixes. The new approval-to-carrier timing analysis adds an important operational signal: part of the problem may start in the pre-carrier phase, before final delivery.
+
+Limitation:
+the analysis shows strong associations, but it does not prove the root cause. To identify the actual cause, additional operational data is required, such as carriers used, operational clusters, logistics hubs, pickup date, dispatch date, carrier handoff date, warehouse management, seller operational capacity, stock availability, backlog, staffing, and workload.
+
+POWER BI INTERIM STAKEHOLDER UPDATE
+
+Dopo il completamento del blocco analitico nel file 06_step7_analysis_start.sql, è stato creato un nuovo script SQL dedicato agli output riutilizzabili per Power BI:
+
+07_step8_power_bi_reusable_outputs.sql
+
+Sono state create e validate quattro SQL view:
+
+- pbi_01_delivery_status_review
+- pbi_02_delay_bucket_review
+- pbi_03_critical_seller_zip_review
+- pbi_04_approval_carrier_timing
+
+Le view sono state create per rendere gli output analitici riutilizzabili e non dipendere solo dai risultati temporanei mostrati in DBeaver.
+
+Ogni view è stata anche esportata in CSV nella directory insight / stakeholder update, in modo da poter costruire rapidamente un mini-report Power BI esportabile in PDF.
+
+Decisione di storage:
+- SQL view = fonte stabile e riutilizzabile;
+- CSV = output rapido per Power BI e PDF interim.
+
+In Power BI sono state importate le quattro tabelle CSV. Prima della costruzione dei visual è stato eseguito un controllo dei tipi dati in Power Query, verificando testo, numeri interi, numeri decimali, percentuali e colonne di ordinamento. Dove necessario, i tipi dati sono stati corretti prima della creazione dei grafici.
+
+È stato costruito un mini-report Power BI, non una dashboard finale, con sei pagine:
+
+1. Cover
+2. Delivery Status vs Negative Review Rate
+3. Delay Buckets
+4. Critical Seller Areas
+5. Approval-to-Carrier Timing
+6. Data Needed
+
+Pagina 1 — Cover:
+È stata creata una pagina introduttiva con titolo, sottotitolo, obiettivo, scope, metodo, dataset, strumenti utilizzati e stato dell’analisi.
+
+Pagina 2 — Delivery Status:
+È stato creato un grafico a barre orizzontali con negative_review_rate_percent per delivery_status. Il messaggio principale è che gli ordini late rappresentano una quota ridotta degli ordini delivered collegati a review valide, ma mostrano un negative review rate molto più alto.
+
+Pagina 3 — Delay Buckets:
+È stato creato un grafico a barre orizzontali con negative_review_rate_percent per delay bucket. È stata aggiunta una label personalizzata con bucket e numero ordini, così il PDF mostra sia severità sia volume. Il messaggio principale è che il bucket 1–7 giorni ha il volume maggiore, mentre i bucket più lunghi mostrano maggiore severità.
+
+Pagina 4 — Critical Seller Areas:
+È stato creato un grafico Top 15 delle città seller critiche, usando una label città + stato. È stata aggiunta una legenda degli stati e un insight macro che collega la vista micro sulle città alla concentrazione nello stato di São Paulo.
+
+Per l’interim update è stato deciso di non usare la tabella geolocation come base relazionale in Power BI, perché geolocation_zip_code_prefix non è una chiave univoca e avrebbe creato una relazione molti-a-molti. La catena usata per il report è:
+
+orders → order_items → sellers → seller_zip_code_prefix / seller_city / seller_state
+
+La mappa geografica è stata rimandata a una fase successiva o alla presentazione finale.
+
+Pagina 5 — Approval-to-Carrier Timing:
+È stato creato un grafico a barre orizzontali con avg_approval_to_carrier_days per delivery_status. Il messaggio principale è che gli ordini late mostrano il tempo medio più alto tra approvazione ordine e consegna al corriere, pari a 5,52 giorni.
+
+Pagina 6 — Data Needed:
+È stata creata una pagina finale con i dati operativi necessari, le domande business per lo stakeholder e la decisione finale. Le domande sono state rese coerenti con ciò che il dataset attuale non permette di sapere.
+
+Dati operativi richiesti:
+- seller/store mapping per ZIP e città critiche;
+- cluster operativo, hub, area manager, partner logistico o canale di vendita;
+- corriere usato per ordine o area seller;
+- pickup date, dispatch date e carrier handoff date;
+- tempi di preparazione seller o magazzino;
+- stock availability, backlog, capacità seller, staffing e workload.
+
+Domande business finali:
+1. Which seller_id/store is linked to each critical seller ZIP or city, and what type of location is it: store, warehouse, hub, marketplace partner, or online channel?
+2. Are the critical sellers/stores part of internal operational clusters by area, hub, manager, logistics partner, or sales channel?
+3. Which carriers were used for orders from the critical seller areas, and are some areas dependent on one carrier or few recurring carriers?
+4. What capacity or business constraints affected the critical seller areas: staff, order volume, preparation time, warehouse limits, workload peaks, backlog, stock issues, or known logistics problems?
+
+Il file Power BI è stato salvato in formato .pbix e il report è stato esportato in PDF con nome versionato per lo stakeholder update.
+
+POWER BI INTERIM STAKEHOLDER UPDATE
+
+After completing the analytical block in the file 06_step7_analysis_start.sql, a new SQL script was created for reusable Power BI outputs:
+
+07_step8_power_bi_reusable_outputs.sql
+
+Four SQL views were created and validated:
+
+- pbi_01_delivery_status_review
+- pbi_02_delay_bucket_review
+- pbi_03_critical_seller_zip_review
+- pbi_04_approval_carrier_timing
+
+The views were created to make the analytical outputs reusable and avoid relying only on temporary results displayed in DBeaver.
+
+Each view was also exported to CSV in the insight / stakeholder update directory, so that a mini Power BI report exportable to PDF could be built quickly.
+
+Storage decision:
+- SQL view = stable and reusable source;
+- CSV = quick output for Power BI and interim PDF.
+
+In Power BI, the four CSV tables were imported. Before building the visuals, a data type check was performed in Power Query, verifying text fields, integers, decimals, percentages, and sorting columns. Where necessary, data types were corrected before creating the charts.
+
+A mini Power BI report was built, not a final dashboard, with six pages:
+
+1. Cover
+2. Delivery Status vs Negative Review Rate
+3. Delay Buckets
+4. Critical Seller Areas
+5. Approval-to-Carrier Timing
+6. Data Needed
+
+Page 1 — Cover:
+An introductory page was created with title, subtitle, objective, scope, method, dataset, tools used, and analysis status.
+
+Page 2 — Delivery Status:
+A horizontal bar chart was created using negative_review_rate_percent by delivery_status. The main message is that late orders represent a small share of delivered orders linked to valid reviews, but they show a much higher negative review rate.
+
+Page 3 — Delay Buckets:
+A horizontal bar chart was created using negative_review_rate_percent by delay bucket. A custom label with bucket and order count was added, so the PDF shows both severity and volume. The main message is that the 1–7 day bucket has the highest volume, while longer buckets show higher severity.
+
+Page 4 — Critical Seller Areas:
+A Top 15 chart of critical seller cities was created, using a city + state label. A state legend was added, together with a macro-level insight connecting the micro view on cities to the concentration in São Paulo state.
+
+For the interim update, it was decided not to use the geolocation table as a relational base in Power BI, because geolocation_zip_code_prefix is not a unique key and would create a many-to-many relationship. The chain used for the report is:
+
+orders → order_items → sellers → seller_zip_code_prefix / seller_city / seller_state
+
+The geographic map was postponed to a later phase or final presentation.
+
+Page 5 — Approval-to-Carrier Timing:
+A horizontal bar chart was created using avg_approval_to_carrier_days by delivery_status. The main message is that late orders show the highest average time between order approval and carrier handoff, equal to 5.52 days.
+
+Page 6 — Data Needed:
+A final page was created with the required operational data, business questions for the stakeholder, and final decision. The questions were made consistent with what the current dataset cannot explain.
+
+Required operational data:
+- seller/store mapping for critical ZIPs and cities;
+- operational cluster, hub, area manager, logistics partner, or sales channel;
+- carrier used by order or seller area;
+- pickup date, dispatch date, and carrier handoff date;
+- seller or warehouse preparation time;
+- stock availability, backlog, seller capacity, staffing, and workload.
+
+Final business questions:
+1. Which seller_id/store is linked to each critical seller ZIP or city, and what type of location is it: store, warehouse, hub, marketplace partner, or online channel?
+2. Are the critical sellers/stores part of internal operational clusters by area, hub, manager, logistics partner, or sales channel?
+3. Which carriers were used for orders from the critical seller areas, and are some areas dependent on one carrier or few recurring carriers?
+4. What capacity or business constraints affected the critical seller areas: staff, order volume, preparation time, warehouse limits, workload peaks, backlog, stock issues, or known logistics problems?
+
+The Power BI file was saved in .pbix format and the report was exported to PDF with a versioned name for the stakeholder update.
+
+Status:
+ANALYSIS BLOCK COMPLETED - POWER BI INTERIM STAKEHOLDER UPDATE COMPLETED - READY FOR STAKEHOLDER REVIEW
+

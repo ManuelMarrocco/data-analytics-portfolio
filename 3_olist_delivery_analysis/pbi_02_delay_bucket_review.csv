@@ -1,0 +1,6 @@
+"delay_bucket","orders","avg_review_score","negative_reviews","negative_review_rate_percent","sort_order"
+late_1_7_days,3612,2.71,1785,49.42,1
+late_15_21_days,652,1.67,527,80.83,3
+late_22_30_days,362,1.53,301,83.15,4
+late_31_60_days,256,1.83,190,74.22,5
+late_8_14_days,1452,1.68,1162,80.03,2

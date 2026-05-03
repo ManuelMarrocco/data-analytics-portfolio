@@ -1,0 +1,454 @@
+VISUALIZATION / DELIVERY PLAN — OLIST PROJECT
+
+Project:
+OLIST Brazilian E-Commerce Analysis
+
+Status:
+IN PROGRESS — FINAL POWER BI VISUALS PENDING
+
+Purpose:
+Apply the visualization and delivery procedure to the OLIST project, transforming validated SQL outputs, stakeholder feedback, and post-stakeholder follow-up findings into a clear, decision-oriented final Power BI report / PDF presentation.
+
+Delivery objective:
+Prepare the final stakeholder presentation to explain:
+1. whether delivery delays are associated with customer dissatisfaction;
+2. whether São Paulo concentration is mainly volume-driven or also performance-related;
+3. whether specific São Paulo seller-origin ZIP/city areas require geographic follow-up;
+4. whether the pre-carrier phase shows operational signals worth investigating;
+5. what limitations remain before defining operational recommendations.
+
+Audience:
+Mixed audience, primarily focused on operational teams:
+- Operations Management, focused on delivery performance oversight;
+- Logistics and Fulfillment teams;
+- Customer Experience team, focused on review and complaint management;
+- a smaller group of management stakeholders reviewing key findings and potential implications.
+
+Decision to support:
+Decide whether the next operational investigation should focus on São Paulo seller-origin areas, pre-carrier operational timing, and whether additional seller/store/logistics data is required before proposing interventions.
+
+Output type:
+Static Power BI report exported to PDF.
+
+Level of detail:
+Operational summary with supporting visuals.
+The presentation must remain accessible, avoid overly technical SQL explanations, and support conclusions with clear data.
+
+Success criteria:
+The delivery is successful if the stakeholder can clearly understand:
+- late deliveries are a minority but have high dissatisfaction impact;
+- São Paulo has the highest volume and slightly worse delivery/review performance;
+- some São Paulo ZIP/city areas are candidates for geographic follow-up;
+- the geographic map uses approximate ZIP-prefix coordinates, not exact store locations;
+- approval-to-carrier timing suggests a possible pre-carrier operational signal;
+- root cause cannot be confirmed without additional operational data.
+
+INSIGHT-TO-VISUAL MAPPING
+
+Purpose:
+Map each validated insight to one specific visual, following the rule:
+1 insight = 1 visual.
+
+Visual 1 — Delivery Status vs Negative Review Rate
+
+Insight:
+Late deliveries are a minority of delivered orders, but they show a much higher negative review rate.
+
+Business question answered:
+Are delivery delays associated with customer dissatisfaction?
+
+Visual type:
+Horizontal bar chart.
+
+Data source:
+pbi_01_delivery_status_review
+
+Fields:
+- delivery_status
+- negative_review_rate_percent
+- orders
+
+Expected message:
+Late deliveries are not the majority of orders, but they have a disproportionate impact on customer dissatisfaction.
+
+
+Visual 2 — Delay Bucket vs Negative Review Rate
+
+Insight:
+Short delays matter because of volume, while longer delays matter because of severity.
+
+Business question answered:
+Does dissatisfaction increase across delivery delay ranges?
+
+Visual type:
+Horizontal bar chart.
+
+Data source:
+pbi_02_delay_bucket_review
+
+Fields:
+- delay_bucket_label
+- negative_review_rate_percent
+- orders
+- sort_order
+
+Expected message:
+The 1–7 day delay bucket has the largest volume, while longer delay buckets show higher negative review rates.
+
+
+Visual 3 — São Paulo vs Rest of Dataset
+
+Insight:
+São Paulo has the highest order volume and slightly worse delivery/review performance than the rest of the dataset.
+
+Business question answered:
+Is São Paulo concentration mainly driven by volume or also by worse performance?
+
+Visual type:
+Bar chart / comparison visual.
+
+Data source:
+sp_vs_rest_dataset_performance_v01.csv
+
+Fields:
+- seller_area_group
+- total_delivered_orders
+- late_delivery_rate_percent
+- negative_review_rate_percent
+- avg_approval_to_carrier_days
+
+Expected message:
+São Paulo is mainly volume-driven, but it also shows slightly worse late delivery and negative review rates.
+
+
+Visual 4 — São Paulo ZIP/City Geographic Follow-up
+
+Insight:
+Some São Paulo seller-origin ZIP/city areas are candidates for geographic follow-up.
+
+Business question answered:
+Where are the São Paulo seller-origin areas that require further investigation?
+
+Visual type:
+Map visual.
+
+Data source:
+sp_seller_zip_city_candidates_with_coordinates_v01.csv
+
+Fields:
+- latitude
+- longitude
+- seller_zip_code_prefix
+- seller_city_analysis
+- total_delivered_orders
+- late_delivery_rate_percent
+- negative_review_rate_percent
+- avg_approval_to_carrier_days
+
+Expected message:
+The map provides an approximate geographic view of candidate ZIP/city areas, not exact store or hub locations.
+
+
+Visual 5 — Approval-to-Carrier Timing
+
+Insight:
+Late deliveries show higher average approval-to-carrier time.
+
+Business question answered:
+Does the pre-carrier phase show an operational signal associated with late deliveries?
+
+Visual type:
+Horizontal bar chart.
+
+Data source:
+pbi_04_approval_carrier_timing
+
+Fields:
+- delivery_status
+- avg_approval_to_carrier_days
+
+Expected message:
+Late orders show longer approval-to-carrier timing, suggesting that part of the issue may start before final delivery.
+
+
+Visual 6 — Data Needed / Limitations
+
+Insight:
+Root cause cannot be confirmed with the current dataset.
+
+Business question answered:
+What additional data is needed before defining operational recommendations?
+
+Visual type:
+Text / decision page.
+
+Data source:
+Analysis documentation and stakeholder data requests.
+
+Expected message:
+Operational recommendations require additional seller/store/logistics data, including seller/store mapping, operational clusters, carriers, handoff dates, capacity, stock availability, backlog, staffing, and workload.
+
+REPORT STRUCTURE
+
+Purpose:
+Organize the final Power BI / PDF report in a logical reading flow for an operational-first mixed audience.
+
+Output type:
+Static Power BI report exported to PDF.
+
+Recommended structure:
+
+Page 1 — Cover
+Purpose:
+Introduce project, objective, scope, method, dataset, tools, and delivery status.
+
+Expected message:
+This is a final stakeholder presentation focused on delivery performance, customer dissatisfaction, São Paulo follow-up, and operational limitations.
+
+
+Page 2 — Executive / Operational Summary
+Purpose:
+Give the audience the main findings before showing detailed visuals.
+
+Content:
+- late deliveries are a minority but high-impact;
+- São Paulo is mainly volume-driven, with slightly worse delivery/review performance;
+- some São Paulo ZIP/city areas require geographic follow-up;
+- approval-to-carrier timing suggests a possible pre-carrier operational signal;
+- root cause cannot be confirmed without additional operational data.
+
+Expected message:
+The issue is not system-wide delivery slowness, but a high-impact subset of delayed orders and specific seller-origin areas requiring further investigation.
+
+
+Page 3 — Delivery Status vs Negative Review Rate
+Purpose:
+Show the relationship between delivery status and customer dissatisfaction.
+
+Visual:
+Horizontal bar chart.
+
+Expected message:
+Late deliveries have a disproportionate impact on negative reviews.
+
+
+Page 4 — Delay Bucket vs Negative Review Rate
+Purpose:
+Show how delay severity and volume affect customer dissatisfaction.
+
+Visual:
+Horizontal bar chart.
+
+Expected message:
+Short delays matter because of volume; longer delays matter because of severity.
+
+
+Page 5 — São Paulo vs Rest of Dataset
+Purpose:
+Show whether São Paulo concentration is driven by volume or also by performance.
+
+Visual:
+Comparison visual / bar chart.
+
+Expected message:
+São Paulo has the highest volume and slightly worse delivery/review performance, but approval-to-carrier timing is similar at aggregate level.
+
+
+Page 6 — São Paulo ZIP/City Geographic Follow-up
+Purpose:
+Show the approximate geographic distribution of candidate São Paulo seller-origin ZIP/city areas.
+
+Visual:
+Map visual.
+
+Expected message:
+Some ZIP/city areas inside São Paulo require further investigation, but coordinates are approximate ZIP-prefix locations, not exact store or hub locations.
+
+
+Page 7 — Approval-to-Carrier Timing
+Purpose:
+Show whether the pre-carrier phase may be associated with late deliveries.
+
+Visual:
+Horizontal bar chart.
+
+Expected message:
+Late deliveries show longer approval-to-carrier timing, suggesting a possible pre-carrier operational signal.
+
+
+Page 8 — Data Needed / Limitations / Next Steps
+Purpose:
+Clarify what cannot be concluded and what data is needed for root-cause analysis.
+
+Content:
+- current dataset identifies associations, not causation;
+- exact store/hub/seller locations are not available;
+- geographic map uses approximate ZIP-prefix coordinates;
+- additional operational data is required.
+
+Expected message:
+Root cause cannot be confirmed without seller/store/logistics operational data.
+
+VISUAL DESIGN AND VALIDATION RULES
+
+Purpose:
+Ensure that each visual is clear, readable, decision-oriented, and aligned with the validated KPIs.
+
+Design rules:
+- use insight-based titles, not generic metric names;
+- keep labels short and understandable;
+- show units clearly, for example %, days, or n;
+- avoid overcrowded visuals;
+- avoid redundant visuals;
+- use consistent formatting across pages;
+- highlight key values only when they support the message;
+- ensure each page is understandable in 5 seconds.
+
+Validation rules:
+- each visual must answer one clear business question;
+- each visual must support one validated insight;
+- all aggregations must match the SQL output logic;
+- percentages must be clearly labelled;
+- order counts must be visible when volume matters;
+- no misleading scales;
+- no unnecessary technical fields visible to the stakeholder;
+- geographic visual must be labelled as approximate ZIP-prefix mapping.
+
+Power BI formatting decisions:
+- use horizontal bar charts for comparison visuals;
+- use data labels where values must be visible in PDF;
+- use tooltips only as secondary support, not as required information;
+- use map visual only for approximate geographic distribution;
+- avoid raw SQL field names in titles and subtitles;
+- prefer business-readable labels.
+
+Accessibility / audience decision:
+The presentation must remain operational-first and management-readable.
+It should avoid SQL explanations and focus on what the data shows, why it matters, and what should happen next.
+
+Geographic map limitation:
+The map must explicitly state that coordinates are approximate ZIP-prefix coordinates derived from the OLIST geolocation table.
+They do not represent exact seller, store, warehouse, hub, or marketplace partner locations.
+
+
+DELIVERY PREPARATION / MEETING PLAN
+
+Purpose:
+Prepare the final stakeholder delivery so that the presentation is focused, clear, and decision-oriented.
+
+Before meeting checklist:
+☐ final Power BI report completed
+☐ final PDF exported and reviewed
+☐ visuals checked for readability
+☐ insights checked against validated SQL outputs
+☐ limitations explicitly stated
+☐ supporting SQL files ready as backup
+☐ supporting CSV outputs ready as backup
+☐ agenda prepared
+☐ expected decisions clarified
+
+Meeting objective:
+Present the final OLIST delivery analysis and confirm whether the next operational investigation should focus on São Paulo seller-origin areas, pre-carrier timing, and additional seller/store/logistics data.
+
+Audience:
+Mixed audience, primarily operational:
+- Operations Management;
+- Logistics and Fulfillment teams;
+- Customer Experience team;
+- selected management stakeholders.
+
+Presentation style:
+- focus on insights, not raw data;
+- explain what, why, and action;
+- avoid technical SQL detail unless requested;
+- keep limitations explicit;
+- keep recommendations practical and non-final where root cause is not proven.
+
+Suggested agenda:
+1. Project objective and scope
+2. Key findings summary
+3. Delivery delay and customer dissatisfaction
+4. São Paulo vs rest-of-dataset comparison
+5. São Paulo ZIP/city geographic follow-up
+6. Approval-to-carrier operational signal
+7. Limitations and data needed
+8. Proposed next steps
+9. Stakeholder feedback and decisions
+
+Backup material:
+- 06_step7_analysis_start.sql
+- 07_step8_power_bi_reusable_outputs.sql
+- 08_step9_post_stakeholder_followup.sql
+- olist_delivery_performance_stakeholder_update_20260428_v01.pbix
+- olist_delivery_performance_stakeholder_update_20260428_v01.pdf
+- pbi_01_delivery_status_review.csv
+- pbi_02_delay_bucket_review.csv
+- pbi_03_critical_seller_zip_review.csv
+- pbi_04_approval_carrier_timing.csv
+- sp_vs_rest_dataset_performance_v01.csv
+- sp_seller_zip_city_candidates_with_coordinates_v01.csv
+- olist_analysis_23042026
+- OLIST - GIORNALI E ATTIVITA'
+- olist_sow_23042026_v2.pdf
+
+FINAL VALIDATION / CLOSE CRITERIA
+
+Purpose:
+Confirm that the final delivery is ready for stakeholder presentation.
+
+Final validation checklist:
+☐ insight clarity → OK / NOT OK
+☐ usability → OK / NOT OK
+☐ visual readability → OK / NOT OK
+☐ data integrity → OK / NOT OK
+☐ KPI consistency → OK / NOT OK
+☐ limitation clarity → OK / NOT OK
+☐ stakeholder readiness → OK / NOT OK
+
+Insight clarity:
+Each page must communicate one main message without requiring technical explanation.
+
+Usability:
+The final PDF must be understandable for operational teams and management stakeholders.
+
+Visual readability:
+Charts must include clear titles, labels, units, and visible values where needed.
+
+Data integrity:
+All visuals must come from validated SQL outputs or documented Power BI transformations.
+
+KPI consistency:
+Metrics must remain aligned with previously defined KPI logic:
+- delivery status;
+- delay bucket;
+- late delivery rate;
+- average review score;
+- negative review rate;
+- approval-to-carrier time;
+- approximate ZIP-prefix geographic coordinates.
+
+Limitation clarity:
+The final presentation must clearly state:
+- the analysis identifies associations, not causation;
+- root cause cannot be confirmed with the current dataset;
+- geographic coordinates are approximate ZIP-prefix coordinates;
+- the dataset does not provide exact seller/store/warehouse/hub locations.
+
+Stakeholder readiness:
+The presentation is ready only if it supports the stakeholder in deciding whether the next operational investigation should focus on:
+- São Paulo seller-origin areas;
+- specific ZIP/city candidate areas;
+- pre-carrier operational timing;
+- additional seller/store/logistics data.
+
+Close criteria:
+The delivery can be considered complete when:
+☐ final Power BI report is completed
+☐ PDF is exported and checked
+☐ all visuals are validated
+☐ limitations are explicit
+☐ final recommendations are aligned with data evidence
+☐ backup files are organized
+☐ stakeholder presentation is ready
+
+
