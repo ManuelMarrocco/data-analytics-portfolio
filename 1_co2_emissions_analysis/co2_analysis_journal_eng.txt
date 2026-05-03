@@ -1,0 +1,296 @@
+co2_analysis_journal_eng
+
+CO2 emissions notes:
+
+1. Unit of measurement (Metric)
+In which unit of measurement are CO2 emissions expressed in the dataset?
+
+2. Type of contribution to analyze
+When we talk about the countries that contribute the most to emissions, are you interested in considering only absolute values or also the percentage share of the global total?
+
+3. An analyst does not define the results alone.
+They should say:
+"So, to confirm, the objectives of the analysis are..."
+Not "the results will be".
+Small detail, but in real work it matters.
+
+You summarized the request too early.
+You made this summary:
+CO2 emissions evolution over the last 25 years + Top 10 / Top 20 + trend categories.
+The summary is correct, but in reality you should usually ask first:
+precise definition of "trend"
+definition of "stable"
+whether the focus is total emissions or percentage changes
+
+Objective and decision
+What decision or strategic report should this analysis support?
+What is the main question we need to answer with the data?
+What do you expect to understand from the final analysis?
+
+Analysis scope
+What time period should be analyzed?
+Should the report be global or limited to specific areas or countries?
+What exactly do you mean by "main responsible countries"?
+Should we focus on Top 10, Top 20, or both?
+
+Definition of results
+What types of trends are you interested in identifying?
+How do you want to classify countries into trends: increase, stable, reduction?
+Are there specific thresholds or criteria to define these trends?
+
+Metrics
+What unit of measurement should we use for emissions?
+When we talk about country contribution, are you interested only in absolute values or also the global percentage share?
+
+Deliverables
+What should the first version of the report contain?
+By when do you expect the first version of the analysis?
+How often would you like progress updates?
+
+This checklist represents the stakeholder clarification sequence before starting the analysis.
+
+Example email:
+Good evening,
+After reviewing the shared dataset, I confirm that we can schedule a first preview of the analysis in three days.
+The complete version of the analysis is expected to be delivered within seven days starting tomorrow.
+As agreed, I will also send a brief progress update every three days.
+Kind regards.
+
+Summary of questions asked to the stakeholder:
+What is the objective of the CO2 emissions analysis?
+What time period should be analyzed?
+Should the analysis be global or limited to selected countries?
+What do you mean by the main countries responsible for emissions?
+Should we focus on Top 10 or Top 20 emitting countries?
+How should trends be interpreted: increase, stability, reduction?
+In which unit of measurement should emissions be considered?
+Do you want to consider only absolute values or also the global percentage share?
+What are the expected timelines for delivering the analysis?
+Who are the stakeholders who will review the work?
+
+EDA dataset completed:
+cleaning
+validation
+year check
+series check
+logical filtering
+
+Missing plain text documentation, meaning what was done:
+1. Removed World Bank aggregated entities: regions, income groups, economic groups.
+2. Removed countries with no emission data across all years.
+3. Verified chronological order of years.
+4. Filtered countries with complete data for the last 25 years.
+5. Restricted dataset to the period 1987–2011.
+
+Rows removed:
+- aggregated entities
+- countries without emission data
+- countries with incomplete data for the last 25 years
+
+Plain text documentation level:
+| Document type        | Detail level    |
+| -------------------- | --------------- |
+| Analyst working file | very technical  |
+| Portfolio            | technical       |
+| Stakeholder report   | concise         |
+
+--------------------------------------------------------------------------------------------------
+
+Do not delete unnecessary data directly, but follow this logic:
+RAW DATA
+↓
+DATA WITH FLAGS
+↓
+FILTERED DATA
+↓
+ANALYSIS
+
+--------------------------------------------------------------------------------------------------
+
+Outlier handling for this example:
+RAW DATA
+↓
+remove aggregates
+↓
+remove invalid rows
+↓
+check completeness: 25 years
+↓
+OUTLIER CHECK
+↓
+analysis
+
+----------------------------------------------------------------------------------------------------
+
+RAW_DATA        → original dataset
+EDA             → checks and cleaning
+CLEAN_DATA      → final dataset
+DATA_DICTIONARY → description of columns
+
+------------------------------------------------------------------------------------------------------
+
+Duplicate check on Country Code
+The duplicate check should be performed on Country Code, not only on country name.
+Reason: the country name may change or be written differently, while the Country Code (ISO-3) uniquely identifies a country.
+
+Recheck the regions: copy the list and have it checked by AI.
+Presence of key countries.
+
+Create data dictionary:
+
+| Field        | Type    | Unit          | Description                                      |
+| ------------ | ------- | ------------- | ------------------------------------------------ |
+| Country Name | Text    | —             | Name of the country                              |
+| Country Code | Text    | ISO-3         | Country code according to World Bank standard    |
+| Year         | Integer | Year          | Year of observation                              |
+| CO2          | Numeric | Kilotons (kt) | CO2 emissions of the country in the given year   |
+
+EDA exercise summary:
+removal of aggregations
+year sequence check
+verification of complete series: 25 years
+management of nulls and empty cells
+duplicate check on Country Code
+geographic coverage verification
+logical top emitter check
+data dictionary structure
+
+Final summary:
+consistent
+without aggregations
+without incomplete series
+without nulls in the 25-year period
+consecutive years verified
+duplicates checked
+outliers plausible
+global total verified
+documentation present
+
+PYTHON:
+Imported the CSV dataset into pandas.
+Verified the dataset structure: rows, columns, data types.
+Identified the data type issue: numeric year columns were read as strings.
+Converted year columns to numeric format.
+Checked missing values: nulls and empty cells.
+Identified and removed the unnecessary "Unnamed" column.
+Removed the "Total" row created in the spreadsheet for manual control.
+Verified the final dataset size: 162 countries.
+Transformed the data structure from wide format to long format to facilitate time-series analysis.
+   AI decision not fully shared in practical working terms, but accepted as an exercise.
+Verified dataset integrity: each country has 25 consecutive years of data.
+Final correction of data types: Year as integer, CO2 as float.
+Removed columns not useful for the analysis: Indicator Name and Indicator Code.
+Calculated total emissions by country over the last 25 years.
+Identified the main countries responsible for emissions: Top 20.
+Calculated the emissions trend for each country using linear regression over the 25 years.
+Extracted the regression line slope as a measure of the average annual emission trend.
+Applied the trend calculation to all countries using groupby and apply.
+Identified the countries with the fastest emission growth and those with the strongest reduction.
+Observed that the slope distribution is highly asymmetric due to the presence of a few very large countries and many small countries.
+Need to define a stable criterion to classify countries as increasing, stable, or decreasing: threshold to be defined with the stakeholder or through a statistical method.
+
+See Python CO2 exercise.
+
+At this point in the SOW, the following objectives were completed:
+
+Dataset exploration
+You verified:
+dataset structure
+available years
+countries present
+data quality
+
+Data preparation
+You completed:
+dataset cleaning
+removal of unnecessary column
+removal of aggregated row
+wide-to-long transformation
+data type correction
+
+Trend analysis
+You calculated:
+linear regression per country
+therefore the emission slope over the last 25 years
+
+Top emitters identification
+You created:
+Top 20 countries by total emissions
+
+Preliminary analysis preview: SOW milestone [send email]
+
+You are presenting to the stakeholder:
+Top emitters
+emission growth
+emission reduction
+question about the criterion for stable countries
+
+-------------------------------------------------------------------------------------------
+
+Email sent:
+
+Good evening,
+
+Please find attached the preliminary analysis related to the requests on the evolution of CO2 emissions by country over the last 25 years.
+
+In this first phase, I identified:
+
+* the main countries by total emissions
+* the countries with the most significant emission growth
+* the countries with the most significant emission reduction
+
+The criterion for classifying countries with stable emissions still needs to be defined.
+The statistical analysis, based on the standard deviation of slopes, suggests a fairly wide range of countries that would fall into this category.
+
+Would you prefer to:
+
+* keep this statistical definition, or
+* identify a limited number of countries with emissions closest to stability?
+
+I remain available for any guidance before proceeding with the visualizations and final insights.
+
+Kind regards,
+Manuel Marrocco
+
+-------------------------------------------------------------------------------------------
+
+Reply email:
+
+Good evening,
+
+Thank you for the update and for the preliminary analysis.
+
+The results on the main emitting countries and on the growth and reduction trends are clear and aligned with what we wanted to verify.
+
+Regarding countries with stable emissions, I would prefer a classification that identifies a limited number of countries, ideally around 10, so that the result is more readable in the final report.
+
+I would therefore suggest identifying the countries with slopes closest to zero, keeping a concise list of the most representative cases.
+
+We can proceed in this direction and then move on to the visualizations and main insights.
+
+-------------------------------------------------------------------------------------------
+
+Identify 10 countries around the zero range; see Python code.
+
+-------------------------------------------------------------------------------------------
+
+Outputs created and saved as CSV files for data visualization.
+
+-------------------------------------------------------------------------------------------
+
+Charts created and insights written:
+
+Main contributors to global emissions
+The analysis shows that CO2 emissions are highly concentrated among a limited number of countries. During the period 1987–2011, the United States and China are the main contributors, with approximately 13.3 and 10.9 billion tons of CO2 respectively. The other countries show significantly lower cumulative emissions: India and Japan produce slightly less than 3 billion tons, followed by the United Kingdom, Canada, and Italy. This distribution highlights a strong concentration of global emissions within a small group of major economies.
+
+Evolution of emissions over the last 25 years
+The trend analysis reveals different emission patterns among the main emitting countries. China, India, South Korea, South Africa, and Mexico show a clear growth trajectory during the analyzed period. In contrast, Canada, Italy, and the United States show moderate growth until the early 2000s, followed by a slight decrease. Japan maintains relatively stable emission levels throughout the entire period, while the United Kingdom shows a gradual reduction in emissions toward the end of the analyzed time interval.
+
+Countries with the fastest emission growth
+Among the analyzed countries, China emerges as the country with the fastest emission growth, with an increase significantly higher than any other country in the dataset. The growth rate observed in China is approximately four times higher than that of India, the second country in terms of emission growth, reflecting the rapid industrial and economic expansion that occurred during the analyzed period.
+
+Countries with relatively stable emissions
+A group of countries shows relatively stable emission levels over time, with minimal long-term variations. Many of these countries are smaller economies or island states, where emission levels remain relatively constant throughout the analyzed period.
+
+Countries reducing emissions
+The analysis also identifies countries where emissions decreased over time. In particular, the United Kingdom, together with countries such as Poland and Romania, shows a clear decreasing trend in annual CO2 emissions during the analyzed period. This indicates that while some economies continue to increase their emissions, others are already going through a gradual reduction phase.
