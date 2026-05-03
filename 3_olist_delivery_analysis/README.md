@@ -26,6 +26,23 @@ The analysis focused on:
 
 ---
 
+## Project Files
+
+Main files included in this project:
+
+- `olist_delivery_performance_final_presentation_20260430_v01.pdf` — final project presentation
+- `olist_delivery_performance_stakeholder_update_20260428_v01.pdf` — interim stakeholder update
+- `olist_sp_diagnostic_dashboard_followup_20260502_v01.pbix` — final Power BI dashboard extension
+- `sp_city_diagnostic_dashboard_v01.csv.csv` — dataset used for the São Paulo diagnostic dashboard
+- `pbi_01_delivery_status_review.csv` — delivery status and review analysis output
+- `pbi_02_delay_bucket_review.csv` — delay bucket analysis output
+- `pbi_03_critical_seller_zip_review.csv` — seller-origin follow-up output
+- `pbi_04_approval_carrier_timing.csv` — approval-to-carrier timing output
+- `olist_analysis_23042026.txt` — analysis notes and SQL workflow documentation
+- `olist_data_quality_23042026.txt` — data quality documentation
+
+---
+
 ## Dataset
 
 The dataset includes OLIST marketplace data related to:
